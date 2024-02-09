@@ -1,4 +1,5 @@
 import gleam/bit_array
+import gleam/bool
 import gleam/list
 import gleam/result
 import gleam/string
@@ -46,49 +47,33 @@ fn char_token_type(char: String) -> Result(token.TokenType, Nil) {
 pub fn next_token(lexer: Lexer) -> #(token.Token, Lexer) {
   let lexer = skip_whitespace(lexer)
 
-  lexer
-  |> read_operator()
-  |> result.lazy_unwrap(fn() {
-    lexer
-    |> read_identifier()
-    |> result.lazy_unwrap(fn() {
-      lexer
-      |> read_digit()
-      |> result.lazy_unwrap(fn() {
-        case lexer.ch {
-          Ok(char) -> consume_char_token(lexer, token.Illegal, char)
-          Error(Nil) -> #(
-            token.Token(token_type: token.Eof, literal: ""),
-            lexer,
-          )
-        }
-      })
-    })
-  })
-}
+  use <- result.lazy_unwrap(read_operator(lexer))
+  use <- result.lazy_unwrap(read_identifier(lexer))
+  use <- result.lazy_unwrap(read_digit(lexer))
 
-fn skip_whitespace(lexer: Lexer) -> Lexer {
   case lexer.ch {
-    Ok(c) ->
-      case is_whitespace(c) {
-        True ->
-          lexer
-          |> read_char()
-          |> skip_whitespace()
-
-        False -> lexer
-      }
-
-    Error(Nil) -> lexer
+    Ok(char) -> consume_char_token(lexer, token.Illegal, char)
+    Error(Nil) -> #(token.Token(token_type: token.Eof, literal: ""), lexer)
   }
 }
 
+fn skip_whitespace(lexer: Lexer) -> Lexer {
+  {
+    use char <- result.try(lexer.ch)
+    use <- bool.guard(when: !is_whitespace(char), return: Error(Nil))
+
+    lexer
+    |> read_char()
+    |> skip_whitespace()
+    |> Ok()
+  }
+  |> result.unwrap(lexer)
+}
+
 fn read_operator(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  result.try(lexer.ch, fn(char) {
-    result.try(char_token_type(char), fn(token_type) {
-      Ok(consume_char_token(lexer, token_type, char))
-    })
-  })
+  use char <- result.try(lexer.ch)
+  use token_type <- result.try(char_token_type(char))
+  Ok(consume_char_token(lexer, token_type, char))
 }
 
 fn consume_char_token(lexer, token_type, ch) -> #(token.Token, Lexer) {
@@ -120,49 +105,33 @@ fn lookup_identifier_type(identifier) -> token.TokenType {
 }
 
 fn read_identifier(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  result.try(lexer.ch, fn(char) {
-    case is_letter(char) {
-      True -> {
-        let #(lexer, builder) =
-          read_while(lexer, string_builder.new(), is_letter)
-        let literal = string_builder.to_string(builder)
-        let token_type = lookup_identifier_type(literal)
-        Ok(#(token.Token(token_type, literal), lexer))
-      }
+  use char <- result.try(lexer.ch)
+  use <- bool.guard(when: !is_letter(char), return: Error(Nil))
 
-      False -> Error(Nil)
-    }
-  })
+  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_letter)
+  let literal = string_builder.to_string(builder)
+  let token_type = lookup_identifier_type(literal)
+  Ok(#(token.Token(token_type, literal), lexer))
 }
 
 fn read_digit(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  result.try(lexer.ch, fn(char) {
-    case is_digit(char) {
-      True -> {
-        let #(lexer, builder) =
-          read_while(lexer, string_builder.new(), is_digit)
-        let literal = string_builder.to_string(builder)
-        Ok(#(token.Token(token.Int, literal), lexer))
-      }
+  use char <- result.try(lexer.ch)
+  use <- bool.guard(when: !is_digit(char), return: Error(Nil))
 
-      False -> Error(Nil)
-    }
-  })
+  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_digit)
+  let literal = string_builder.to_string(builder)
+  Ok(#(token.Token(token.Int, literal), lexer))
 }
 
 fn read_while(lexer: Lexer, builder, predicate) {
-  lexer.ch
-  |> result.try(fn(char) {
-    case predicate(char) {
-      True -> Ok(char)
-      False -> Error(Nil)
-    }
-  })
-  |> result.map(fn(char) {
+  {
+    use char <- result.try(lexer.ch)
+    use <- bool.guard(when: !predicate(char), return: Error(Nil))
+
     let builder = string_builder.append(builder, char)
     let lexer = read_char(lexer)
-    read_while(lexer, builder, predicate)
-  })
+    Ok(read_while(lexer, builder, predicate))
+  }
   |> result.unwrap(#(lexer, builder))
 }
 

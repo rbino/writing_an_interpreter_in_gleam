@@ -30,6 +30,12 @@ fn char_token_type(char: String) -> Result(token.TokenType, Nil) {
     ")" -> Ok(token.RParen)
     "," -> Ok(token.Comma)
     "+" -> Ok(token.Plus)
+    "-" -> Ok(token.Minus)
+    "*" -> Ok(token.Asterisk)
+    "/" -> Ok(token.Slash)
+    "!" -> Ok(token.Bang)
+    "<" -> Ok(token.LT)
+    ">" -> Ok(token.GT)
     "{" -> Ok(token.LBrace)
     "}" -> Ok(token.RBrace)
     _ -> Error(Nil)
@@ -93,6 +99,11 @@ fn lookup_identifier_type(identifier) -> token.TokenType {
   case identifier {
     "fn" -> token.Function
     "let" -> token.Let
+    "true" -> token.True
+    "false" -> token.False
+    "if" -> token.If
+    "else" -> token.Else
+    "return" -> token.Return
     _ -> token.Ident
   }
 }

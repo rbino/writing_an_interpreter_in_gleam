@@ -9,6 +9,13 @@ pub type TokenType {
   // Operators
   Assign
   Plus
+  Minus
+  Bang
+  Asterisk
+  Slash
+
+  LT
+  GT
 
   // Delimiters
   Comma
@@ -22,6 +29,11 @@ pub type TokenType {
   // Keywords
   Function
   Let
+  True
+  False
+  If
+  Else
+  Return
 }
 
 pub type Token {

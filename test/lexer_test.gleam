@@ -13,10 +13,20 @@ pub fn next_token_test() {
   let input =
     "let five = 5;
 let ten = 10;
+
 let add = fn(x, y) {
   x + y;
 };
+
 let result = add(five, ten);   
+!-/*5;
+5 < 10 > 5;
+
+if (5 < 10) {
+  return true;
+} else {
+  return false;
+}
 "
 
   let expected_tokens = [
@@ -56,6 +66,35 @@ let result = add(five, ten);
     token.Token(token_type: token.Ident, literal: "ten"),
     token.Token(token_type: token.RParen, literal: ")"),
     token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.Bang, literal: "!"),
+    token.Token(token_type: token.Minus, literal: "-"),
+    token.Token(token_type: token.Slash, literal: "/"),
+    token.Token(token_type: token.Asterisk, literal: "*"),
+    token.Token(token_type: token.Int, literal: "5"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.Int, literal: "5"),
+    token.Token(token_type: token.LT, literal: "<"),
+    token.Token(token_type: token.Int, literal: "10"),
+    token.Token(token_type: token.GT, literal: ">"),
+    token.Token(token_type: token.Int, literal: "5"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.If, literal: "if"),
+    token.Token(token_type: token.LParen, literal: "("),
+    token.Token(token_type: token.Int, literal: "5"),
+    token.Token(token_type: token.LT, literal: "<"),
+    token.Token(token_type: token.Int, literal: "10"),
+    token.Token(token_type: token.RParen, literal: ")"),
+    token.Token(token_type: token.LBrace, literal: "{"),
+    token.Token(token_type: token.Return, literal: "return"),
+    token.Token(token_type: token.True, literal: "true"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.RBrace, literal: "}"),
+    token.Token(token_type: token.Else, literal: "else"),
+    token.Token(token_type: token.LBrace, literal: "{"),
+    token.Token(token_type: token.Return, literal: "return"),
+    token.Token(token_type: token.False, literal: "false"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.RBrace, literal: "}"),
     token.Token(token_type: token.Eof, literal: ""),
   ]
 

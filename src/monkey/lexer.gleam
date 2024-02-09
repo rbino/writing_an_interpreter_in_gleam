@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/list
+import gleam/result
 import gleam/string
 import gleam/string_builder
 import monkey/token
@@ -45,23 +46,25 @@ fn char_token_type(char: String) -> Result(token.TokenType, Nil) {
 pub fn next_token(lexer: Lexer) -> #(token.Token, Lexer) {
   let lexer = skip_whitespace(lexer)
 
-  case lexer.ch {
-    Ok(c) ->
-      case char_token_type(c) {
-        Ok(token_type) -> consume_char_token(lexer, token_type, c)
-        Error(Nil) ->
-          case is_letter(c) {
-            True -> read_identifier(lexer)
-            False ->
-              case is_digit(c) {
-                True -> read_digit(lexer)
-                False -> consume_char_token(lexer, token.Illegal, c)
-              }
-          }
-      }
-
-    Error(Nil) -> #(token.Token(token_type: token.Eof, literal: ""), lexer)
-  }
+  lexer
+  |> read_operator()
+  |> result.lazy_unwrap(fn() {
+    lexer
+    |> read_identifier()
+    |> result.lazy_unwrap(fn() {
+      lexer
+      |> read_digit()
+      |> result.lazy_unwrap(fn() {
+        case lexer.ch {
+          Ok(char) -> consume_char_token(lexer, token.Illegal, char)
+          Error(Nil) -> #(
+            token.Token(token_type: token.Eof, literal: ""),
+            lexer,
+          )
+        }
+      })
+    })
+  })
 }
 
 fn skip_whitespace(lexer: Lexer) -> Lexer {
@@ -78,6 +81,14 @@ fn skip_whitespace(lexer: Lexer) -> Lexer {
 
     Error(Nil) -> lexer
   }
+}
+
+fn read_operator(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
+  result.try(lexer.ch, fn(char) {
+    result.try(char_token_type(char), fn(token_type) {
+      Ok(consume_char_token(lexer, token_type, char))
+    })
+  })
 }
 
 fn consume_char_token(lexer, token_type, ch) -> #(token.Token, Lexer) {
@@ -108,34 +119,51 @@ fn lookup_identifier_type(identifier) -> token.TokenType {
   }
 }
 
-fn read_identifier(lexer: Lexer) -> #(token.Token, Lexer) {
-  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_letter)
-  let literal = string_builder.to_string(builder)
-  let token_type = lookup_identifier_type(literal)
-  #(token.Token(token_type, literal), lexer)
+fn read_identifier(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
+  result.try(lexer.ch, fn(char) {
+    case is_letter(char) {
+      True -> {
+        let #(lexer, builder) =
+          read_while(lexer, string_builder.new(), is_letter)
+        let literal = string_builder.to_string(builder)
+        let token_type = lookup_identifier_type(literal)
+        Ok(#(token.Token(token_type, literal), lexer))
+      }
+
+      False -> Error(Nil)
+    }
+  })
 }
 
-fn read_digit(lexer: Lexer) -> #(token.Token, Lexer) {
-  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_digit)
-  let literal = string_builder.to_string(builder)
-  #(token.Token(token.Int, literal), lexer)
+fn read_digit(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
+  result.try(lexer.ch, fn(char) {
+    case is_digit(char) {
+      True -> {
+        let #(lexer, builder) =
+          read_while(lexer, string_builder.new(), is_digit)
+        let literal = string_builder.to_string(builder)
+        Ok(#(token.Token(token.Int, literal), lexer))
+      }
+
+      False -> Error(Nil)
+    }
+  })
 }
 
 fn read_while(lexer: Lexer, builder, predicate) {
-  case lexer.ch {
-    Ok(char) ->
-      case predicate(char) {
-        True -> {
-          let builder = string_builder.append(builder, char)
-          let lexer = read_char(lexer)
-          read_while(lexer, builder, predicate)
-        }
-
-        False -> #(lexer, builder)
-      }
-
-    Error(Nil) -> #(lexer, builder)
-  }
+  lexer.ch
+  |> result.try(fn(char) {
+    case predicate(char) {
+      True -> Ok(char)
+      False -> Error(Nil)
+    }
+  })
+  |> result.map(fn(char) {
+    let builder = string_builder.append(builder, char)
+    let lexer = read_char(lexer)
+    read_while(lexer, builder, predicate)
+  })
+  |> result.unwrap(#(lexer, builder))
 }
 
 const lower_a = 97

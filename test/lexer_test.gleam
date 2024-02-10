@@ -27,6 +27,9 @@ if (5 < 10) {
 } else {
   return false;
 }
+
+10 == 10;
+10 != 9;
 "
 
   let expected_tokens = [
@@ -95,6 +98,14 @@ if (5 < 10) {
     token.Token(token_type: token.False, literal: "false"),
     token.Token(token_type: token.Semicolon, literal: ";"),
     token.Token(token_type: token.RBrace, literal: "}"),
+    token.Token(token_type: token.Int, literal: "10"),
+    token.Token(token_type: token.Eq, literal: "=="),
+    token.Token(token_type: token.Int, literal: "10"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
+    token.Token(token_type: token.Int, literal: "10"),
+    token.Token(token_type: token.NotEq, literal: "!="),
+    token.Token(token_type: token.Int, literal: "9"),
+    token.Token(token_type: token.Semicolon, literal: ";"),
     token.Token(token_type: token.Eof, literal: ""),
   ]
 

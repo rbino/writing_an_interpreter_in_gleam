@@ -1,6 +1,7 @@
 import gleam/bit_array
 import gleam/bool
 import gleam/list
+import gleam/option
 import gleam/result
 import gleam/string
 import gleam/string_builder
@@ -24,35 +25,44 @@ pub fn new(input) -> Lexer {
   read_char(lexer)
 }
 
-fn char_token_type(char: String) -> Result(token.TokenType, Nil) {
-  case char {
-    "=" -> Ok(token.Assign)
-    ";" -> Ok(token.Semicolon)
-    "(" -> Ok(token.LParen)
-    ")" -> Ok(token.RParen)
-    "," -> Ok(token.Comma)
-    "+" -> Ok(token.Plus)
-    "-" -> Ok(token.Minus)
-    "*" -> Ok(token.Asterisk)
-    "/" -> Ok(token.Slash)
-    "!" -> Ok(token.Bang)
-    "<" -> Ok(token.LT)
-    ">" -> Ok(token.GT)
-    "{" -> Ok(token.LBrace)
-    "}" -> Ok(token.RBrace)
-    _ -> Error(Nil)
+fn symbol_token(char, peeked) {
+  let build_token = fn(token_type, literal) {
+    Ok(token.Token(token_type, literal))
+  }
+
+  case char, peeked {
+    "=", option.Some("=") -> build_token(token.Eq, "==")
+    "!", option.Some("=") -> build_token(token.NotEq, "!=")
+    "=", _ -> build_token(token.Assign, char)
+    "!", _ -> build_token(token.Bang, char)
+    ";", _ -> build_token(token.Semicolon, char)
+    "(", _ -> build_token(token.LParen, char)
+    ")", _ -> build_token(token.RParen, char)
+    ",", _ -> build_token(token.Comma, char)
+    "+", _ -> build_token(token.Plus, char)
+    "-", _ -> build_token(token.Minus, char)
+    "*", _ -> build_token(token.Asterisk, char)
+    "/", _ -> build_token(token.Slash, char)
+    "<", _ -> build_token(token.LT, char)
+    ">", _ -> build_token(token.GT, char)
+    "{", _ -> build_token(token.LBrace, char)
+    "}", _ -> build_token(token.RBrace, char)
+    _, _ -> Error(Nil)
   }
 }
 
 pub fn next_token(lexer: Lexer) -> #(token.Token, Lexer) {
   let lexer = skip_whitespace(lexer)
 
-  use <- result.lazy_unwrap(read_operator(lexer))
+  use <- result.lazy_unwrap(read_symbol(lexer))
   use <- result.lazy_unwrap(read_identifier(lexer))
   use <- result.lazy_unwrap(read_digit(lexer))
 
   case lexer.ch {
-    Ok(char) -> consume_char_token(lexer, token.Illegal, char)
+    Ok(char) -> {
+      let token = token.Token(token.Illegal, char)
+      #(token, consume_token(lexer, token))
+    }
     Error(Nil) -> #(token.Token(token_type: token.Eof, literal: ""), lexer)
   }
 }
@@ -70,14 +80,18 @@ fn skip_whitespace(lexer: Lexer) -> Lexer {
   |> result.unwrap(lexer)
 }
 
-fn read_operator(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
+fn read_symbol(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
   use char <- result.try(lexer.ch)
-  use token_type <- result.try(char_token_type(char))
-  Ok(consume_char_token(lexer, token_type, char))
+  use token <- result.try(symbol_token(char, peek_char(lexer)))
+
+  Ok(#(token, consume_token(lexer, token)))
 }
 
-fn consume_char_token(lexer, token_type, ch) -> #(token.Token, Lexer) {
-  #(token.Token(token_type, ch), read_char(lexer))
+fn consume_token(lexer, token: token.Token) -> Lexer {
+  token.literal
+  |> string.length()
+  |> list.range(from: 1, to: _)
+  |> list.fold(lexer, fn(lexer, _) { read_char(lexer) })
 }
 
 fn read_char(lexer: Lexer) -> Lexer {
@@ -89,6 +103,11 @@ fn read_char(lexer: Lexer) -> Lexer {
     position: lexer.read_position,
     read_position: { lexer.read_position + 1 },
   )
+}
+
+fn peek_char(lexer: Lexer) {
+  list.at(lexer.input, lexer.read_position)
+  |> option.from_result()
 }
 
 fn lookup_identifier_type(identifier) -> token.TokenType {

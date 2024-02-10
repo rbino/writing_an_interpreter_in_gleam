@@ -16,6 +16,8 @@ pub type TokenType {
 
   LT
   GT
+  Eq
+  NotEq
 
   // Delimiters
   Comma

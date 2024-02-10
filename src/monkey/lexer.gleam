@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/bool
+import gleam/iterator
 import gleam/list
 import gleam/option
 import gleam/result
@@ -23,6 +24,21 @@ pub fn new(input) -> Lexer {
     |> Lexer(0, 0, Error(Nil))
 
   read_char(lexer)
+}
+
+pub fn to_iterator(lexer) {
+  use acc <- iterator.unfold(from: option.Some(lexer))
+  {
+    use lexer <- option.map(acc)
+    let #(token, lexer) = next_token(lexer)
+    case token, lexer {
+      token.Token(token_type: token.Eof, literal: _), _ ->
+        iterator.Next(element: token, accumulator: option.None)
+
+      _, _ -> iterator.Next(element: token, accumulator: option.Some(lexer))
+    }
+  }
+  |> option.unwrap(iterator.Done)
 }
 
 fn symbol_token(char, peeked) {

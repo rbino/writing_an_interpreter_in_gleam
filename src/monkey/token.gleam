@@ -37,3 +37,33 @@ pub type Token {
   Else
   Return
 }
+
+pub fn to_string(token) {
+  case token {
+    Ident(value) | Int(value) | Illegal(value) -> value
+    Eof -> "EOF"
+    Assign -> "="
+    Plus -> "+"
+    Minus -> "-"
+    Bang -> "!"
+    Asterisk -> "*"
+    Slash -> "/"
+    LT -> "<"
+    GT -> ">"
+    Eq -> "=="
+    NotEq -> "!="
+    Comma -> ","
+    Semicolon -> ";"
+    LParen -> "("
+    RParen -> ")"
+    LBrace -> "{"
+    RBrace -> "}"
+    Function -> "fun"
+    Let -> "let"
+    True -> "true"
+    False -> "false"
+    If -> "if"
+    Else -> "else"
+    Return -> "return"
+  }
+}

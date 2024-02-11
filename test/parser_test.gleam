@@ -9,7 +9,7 @@ pub fn main() {
 }
 
 // gleeunit test functions end in `_test`
-pub fn parse_test() {
+pub fn parse_let_test() {
   let input =
     "let x = 5;
 let y = 10;
@@ -36,6 +36,31 @@ let foobar = 838383;
 
     node
     |> should.equal(parser.Let(name: expected, value: Nil))
+  })
+}
+
+pub fn parse_return_test() {
+  let input =
+    "return 5;
+return 10;
+return 993322;"
+
+  let result =
+    input
+    |> lexer.lex()
+    |> parser.parse()
+
+  should.be_ok(result)
+
+  let assert Ok(program) = result
+
+  list.length(program)
+  |> should.equal(3)
+
+  program
+  |> list.each(fn(node) {
+    node
+    |> should.equal(parser.Return(value: Nil))
   })
 }
 

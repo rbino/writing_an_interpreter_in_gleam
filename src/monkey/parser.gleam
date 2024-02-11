@@ -8,6 +8,7 @@ pub type Program {
 
 pub type Node {
   Let(name: String, value: Nil)
+  Return(value: Nil)
   Ident(String)
 }
 
@@ -47,6 +48,13 @@ fn parse_statement(parser: Parser, token) {
       |> advance()
       |> parse_let_statement()
     }
+
+    token.Return -> {
+      parser
+      |> advance()
+      |> parse_return_statement()
+    }
+
     _ -> Error(parser)
   }
 }
@@ -78,6 +86,12 @@ fn parse_let_statement(parser: Parser) {
       |> Error()
     }
   }
+}
+
+fn parse_return_statement(parser: Parser) {
+  use parser <- result.map(skip(parser, until: token.Semicolon))
+  let node = Return(value: Nil)
+  #(node, parser)
 }
 
 fn skip(parser: Parser, until target_token) {

@@ -1,10 +1,10 @@
-pub type TokenType {
-  Illegal
+pub type Token {
+  Illegal(value: String)
   Eof
 
   // Identifiers + literals
-  Ident
-  Int
+  Ident(value: String)
+  Int(value: String)
 
   // Operators
   Assign
@@ -36,8 +36,4 @@ pub type TokenType {
   If
   Else
   Return
-}
-
-pub type Token {
-  Token(token_type: TokenType, literal: String)
 }

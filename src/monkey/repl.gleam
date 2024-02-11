@@ -1,6 +1,6 @@
 import gleam/erlang
 import gleam/io
-import gleam/iterator
+import gleam/list
 import gleam/result
 import gleam/string
 import monkey/lexer
@@ -14,15 +14,12 @@ pub fn start() {
 fn loop() {
   let _ = {
     use line <- result.map(erlang.get_line(prompt))
-    let iter =
-      line
-      |> lexer.new()
-      |> lexer.to_iterator()
-    use token <- iterator.each(iter)
-
-    token
-    |> string.inspect()
-    |> io.println()
+    let tokens = lexer.lex(line)
+    list.each(tokens, fn(token) {
+      token
+      |> string.inspect()
+      |> io.println()
+    })
   }
 
   loop()

@@ -1,11 +1,7 @@
 import gleam/bit_array
 import gleam/bool
-import gleam/iterator
 import gleam/list
-import gleam/option
-import gleam/result
 import gleam/string
-import gleam/string_builder
 import monkey/token
 
 pub opaque type Lexer {
@@ -17,157 +13,85 @@ pub opaque type Lexer {
   )
 }
 
-pub fn new(input) -> Lexer {
-  let lexer =
-    input
-    |> string.to_graphemes()
-    |> Lexer(0, 0, Error(Nil))
-
-  read_char(lexer)
+pub fn lex(input) -> List(token.Token) {
+  let graphemes = string.to_graphemes(input)
+  do_lex([], graphemes)
 }
 
-pub fn to_iterator(lexer) {
-  use acc <- iterator.unfold(from: option.Some(lexer))
-  {
-    use lexer <- option.map(acc)
-    let #(token, lexer) = next_token(lexer)
-    case token, lexer {
-      token.Token(token_type: token.Eof, literal: _), _ ->
-        iterator.Next(element: token, accumulator: option.None)
+fn do_lex(tokens, remaining) {
+  let lex_digit = fn(remaining) {
+    let digit_length = digit_length(remaining)
+    let #(digit_chars, rest) = list.split(remaining, digit_length)
+    let value = string.join(digit_chars, with: "")
+    do_lex([token.Int(value), ..tokens], rest)
+  }
 
-      _, _ -> iterator.Next(element: token, accumulator: option.Some(lexer))
+  let lex_ident = fn(remaining) {
+    let ident_length = ident_length(remaining)
+    let #(ident_chars, rest) = list.split(remaining, ident_length)
+    let value = string.join(ident_chars, with: "")
+    do_lex([token.Ident(value), ..tokens], rest)
+  }
+
+  case remaining {
+    ["r", "e", "t", "u", "r", "n", ..rest] ->
+      do_lex([token.Return, ..tokens], rest)
+    ["f", "a", "l", "s", "e", ..rest] -> do_lex([token.False, ..tokens], rest)
+    ["t", "r", "u", "e", ..rest] -> do_lex([token.True, ..tokens], rest)
+    ["e", "l", "s", "e", ..rest] -> do_lex([token.Else, ..tokens], rest)
+    ["l", "e", "t", ..rest] -> do_lex([token.Let, ..tokens], rest)
+    ["f", "n", ..rest] -> do_lex([token.Function, ..tokens], rest)
+    ["i", "f", ..rest] -> do_lex([token.If, ..tokens], rest)
+    ["=", "=", ..rest] -> do_lex([token.Eq, ..tokens], rest)
+    ["!", "=", ..rest] -> do_lex([token.NotEq, ..tokens], rest)
+    ["(", ..rest] -> do_lex([token.LParen, ..tokens], rest)
+    [")", ..rest] -> do_lex([token.RParen, ..tokens], rest)
+    ["{", ..rest] -> do_lex([token.LBrace, ..tokens], rest)
+    ["}", ..rest] -> do_lex([token.RBrace, ..tokens], rest)
+    ["=", ..rest] -> do_lex([token.Assign, ..tokens], rest)
+    ["!", ..rest] -> do_lex([token.Bang, ..tokens], rest)
+    [";", ..rest] -> do_lex([token.Semicolon, ..tokens], rest)
+    [",", ..rest] -> do_lex([token.Comma, ..tokens], rest)
+    ["+", ..rest] -> do_lex([token.Plus, ..tokens], rest)
+    ["-", ..rest] -> do_lex([token.Minus, ..tokens], rest)
+    ["*", ..rest] -> do_lex([token.Asterisk, ..tokens], rest)
+    ["/", ..rest] -> do_lex([token.Slash, ..tokens], rest)
+    ["<", ..rest] -> do_lex([token.LT, ..tokens], rest)
+    [">", ..rest] -> do_lex([token.GT, ..tokens], rest)
+    [" ", ..rest] | ["\n", ..rest] | ["\r", ..rest] | ["\t", ..rest] ->
+      do_lex(tokens, rest)
+    [c, ..rest] -> {
+      use <- bool.lazy_guard(when: is_digit(c), return: fn() {
+        lex_digit(remaining)
+      })
+      use <- bool.lazy_guard(when: is_ident(c), return: fn() {
+        lex_ident(remaining)
+      })
+      do_lex([token.Illegal(c), ..tokens], rest)
     }
-  }
-  |> option.unwrap(iterator.Done)
-}
 
-fn symbol_token(char, peeked) {
-  let build_token = fn(token_type, literal) {
-    Ok(token.Token(token_type, literal))
-  }
-
-  case char, peeked {
-    "=", option.Some("=") -> build_token(token.Eq, "==")
-    "!", option.Some("=") -> build_token(token.NotEq, "!=")
-    "=", _ -> build_token(token.Assign, char)
-    "!", _ -> build_token(token.Bang, char)
-    ";", _ -> build_token(token.Semicolon, char)
-    "(", _ -> build_token(token.LParen, char)
-    ")", _ -> build_token(token.RParen, char)
-    ",", _ -> build_token(token.Comma, char)
-    "+", _ -> build_token(token.Plus, char)
-    "-", _ -> build_token(token.Minus, char)
-    "*", _ -> build_token(token.Asterisk, char)
-    "/", _ -> build_token(token.Slash, char)
-    "<", _ -> build_token(token.LT, char)
-    ">", _ -> build_token(token.GT, char)
-    "{", _ -> build_token(token.LBrace, char)
-    "}", _ -> build_token(token.RBrace, char)
-    _, _ -> Error(Nil)
+    [] ->
+      [token.Eof, ..tokens]
+      |> list.reverse()
   }
 }
 
-pub fn next_token(lexer: Lexer) -> #(token.Token, Lexer) {
-  let lexer = skip_whitespace(lexer)
+fn digit_length(graphemes) {
+  predicate_length(graphemes, is_digit)
+}
 
-  use <- result.lazy_unwrap(read_symbol(lexer))
-  use <- result.lazy_unwrap(read_identifier(lexer))
-  use <- result.lazy_unwrap(read_digit(lexer))
+fn ident_length(graphemes) {
+  predicate_length(graphemes, is_ident)
+}
 
-  case lexer.ch {
-    Ok(char) -> {
-      let token = token.Token(token.Illegal, char)
-      #(token, consume_token(lexer, token))
+fn predicate_length(graphemes, predicate) {
+  graphemes
+  |> list.fold_until(0, fn(count, grapheme) {
+    case predicate(grapheme) {
+      True -> list.Continue(count + 1)
+      False -> list.Stop(count)
     }
-    Error(Nil) -> #(token.Token(token_type: token.Eof, literal: ""), lexer)
-  }
-}
-
-fn skip_whitespace(lexer: Lexer) -> Lexer {
-  {
-    use char <- result.try(lexer.ch)
-    use <- bool.guard(when: !is_whitespace(char), return: Error(Nil))
-
-    lexer
-    |> read_char()
-    |> skip_whitespace()
-    |> Ok()
-  }
-  |> result.unwrap(lexer)
-}
-
-fn read_symbol(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  use char <- result.try(lexer.ch)
-  use token <- result.try(symbol_token(char, peek_char(lexer)))
-
-  Ok(#(token, consume_token(lexer, token)))
-}
-
-fn consume_token(lexer, token: token.Token) -> Lexer {
-  token.literal
-  |> string.length()
-  |> list.range(from: 1, to: _)
-  |> list.fold(lexer, fn(lexer, _) { read_char(lexer) })
-}
-
-fn read_char(lexer: Lexer) -> Lexer {
-  let ch = list.at(lexer.input, lexer.read_position)
-
-  Lexer(
-    ..lexer,
-    ch: ch,
-    position: lexer.read_position,
-    read_position: { lexer.read_position + 1 },
-  )
-}
-
-fn peek_char(lexer: Lexer) {
-  list.at(lexer.input, lexer.read_position)
-  |> option.from_result()
-}
-
-fn lookup_identifier_type(identifier) -> token.TokenType {
-  case identifier {
-    "fn" -> token.Function
-    "let" -> token.Let
-    "true" -> token.True
-    "false" -> token.False
-    "if" -> token.If
-    "else" -> token.Else
-    "return" -> token.Return
-    _ -> token.Ident
-  }
-}
-
-fn read_identifier(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  use char <- result.try(lexer.ch)
-  use <- bool.guard(when: !is_letter(char), return: Error(Nil))
-
-  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_letter)
-  let literal = string_builder.to_string(builder)
-  let token_type = lookup_identifier_type(literal)
-  Ok(#(token.Token(token_type, literal), lexer))
-}
-
-fn read_digit(lexer: Lexer) -> Result(#(token.Token, Lexer), Nil) {
-  use char <- result.try(lexer.ch)
-  use <- bool.guard(when: !is_digit(char), return: Error(Nil))
-
-  let #(lexer, builder) = read_while(lexer, string_builder.new(), is_digit)
-  let literal = string_builder.to_string(builder)
-  Ok(#(token.Token(token.Int, literal), lexer))
-}
-
-fn read_while(lexer: Lexer, builder, predicate) {
-  {
-    use char <- result.try(lexer.ch)
-    use <- bool.guard(when: !predicate(char), return: Error(Nil))
-
-    let builder = string_builder.append(builder, char)
-    let lexer = read_char(lexer)
-    Ok(read_while(lexer, builder, predicate))
-  }
-  |> result.unwrap(#(lexer, builder))
+  })
 }
 
 const lower_a = 97
@@ -180,7 +104,7 @@ const upper_z = 90
 
 const underscore = 95
 
-fn is_letter(char) {
+fn is_ident(char) {
   case bit_array.from_string(char) {
     <<c>> if lower_a <= c && c <= lower_z || upper_a <= c && c <= upper_z || c == underscore ->
       True
@@ -195,13 +119,6 @@ const nine = 57
 fn is_digit(char) {
   case bit_array.from_string(char) {
     <<c>> if zero <= c && c <= nine -> True
-    _ -> False
-  }
-}
-
-fn is_whitespace(char) {
-  case char {
-    " " | "\t" | "\n" | "\r" -> True
     _ -> False
   }
 }

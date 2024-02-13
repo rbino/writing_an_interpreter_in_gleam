@@ -155,8 +155,8 @@ fn advance_n(parser, n) {
 
 fn add_unexpected_token_error(parser, expected token, got actual) {
   let expected = case token {
-    token.Ident("") -> "an identifier"
-    token.Int("") -> "an integer"
+    token.Ident(_) -> "an identifier"
+    token.Int(_) -> "an integer"
     token -> token.to_string(token)
   }
 

@@ -1,6 +1,7 @@
 import gleam/bit_array
 import gleam/bool
 import gleam/list
+import gleam/int
 import gleam/string
 import monkey/token
 
@@ -22,7 +23,10 @@ fn do_lex(tokens, remaining) {
   let lex_digit = fn(remaining) {
     let digit_length = digit_length(remaining)
     let #(digit_chars, rest) = list.split(remaining, digit_length)
-    let value = string.join(digit_chars, with: "")
+    // We lexed only digit chars, so it's legit to assert here
+    let assert Ok(value) =
+      string.join(digit_chars, with: "")
+      |> int.parse()
     do_lex([token.Int(value), ..tokens], rest)
   }
 

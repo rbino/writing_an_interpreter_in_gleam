@@ -7,9 +7,9 @@ pub type Program {
 }
 
 pub type Node {
-  Let(name: String, value: Nil)
-  Return(value: Nil)
-  Ident(String)
+  Let(name: String, value: Node)
+  Return(value: Node)
+  Ident(ident: String)
 }
 
 type Parser {
@@ -55,16 +55,16 @@ fn parse_statement(parser: Parser, token) {
       |> parse_return_statement()
     }
 
-    _ -> Error(parser)
+    _ -> parse_expression(parser, prec_lowest)
   }
 }
 
 fn parse_let_statement(parser: Parser) {
   case parser.remaining {
     [token.Ident(name), token.Assign, ..] -> {
-      // TODO: right now we're skipping the expression
-      use parser <- result.map(skip(parser, until: token.Semicolon))
-      let node = Let(name: name, value: Nil)
+      let parser = advance_n(parser, 2)
+      use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
+      let node = Let(name: name, value: expr)
       #(node, parser)
     }
 
@@ -89,9 +89,42 @@ fn parse_let_statement(parser: Parser) {
 }
 
 fn parse_return_statement(parser: Parser) {
-  use parser <- result.map(skip(parser, until: token.Semicolon))
-  let node = Return(value: Nil)
+  use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
+  let node = Return(value: expr)
   #(node, parser)
+}
+
+const prec_lowest = 1
+
+const prec_equals = 2
+
+const prec_lessgreater = 3
+
+const prec_sum = 4
+
+const prec_product = 5
+
+const prec_prefix = 6
+
+const prec_call = 7
+
+fn parse_expression(parser: Parser, _prec) {
+  use #(expr, parser) <- result.map(parse_prefix(parser))
+  case parser.remaining {
+    [token.Semicolon, ..] -> #(expr, advance(parser))
+    _ -> #(expr, parser)
+  }
+}
+
+fn parse_prefix(parser: Parser) {
+  case parser.remaining {
+    [token.Ident(value), ..] -> Ok(#(Ident(value), advance(parser)))
+
+    _ -> {
+      use parser <- result.then(skip(parser, until: token.Semicolon))
+      Error(parser)
+    }
+  }
 }
 
 fn skip(parser: Parser, until target_token) {
@@ -113,6 +146,13 @@ fn advance(parser) {
   Parser(..parser, remaining: list.drop(parser.remaining, 1))
 }
 
+fn advance_n(parser, n) {
+  case n {
+    0 -> parser
+    n -> advance_n(parser, n - 1)
+  }
+}
+
 fn add_unexpected_token_error(parser, expected token, got actual) {
   let expected = case token {
     token.Ident("") -> "an identifier"
@@ -123,4 +163,13 @@ fn add_unexpected_token_error(parser, expected token, got actual) {
   let error = "Expected " <> expected <> " but got " <> token.to_string(actual)
 
   Parser(..parser, errors: [error, ..parser.errors])
+}
+
+pub fn to_string(node) {
+  case node {
+    Let(name: name, value: value) ->
+      "let " <> name <> " = " <> to_string(value) <> ";"
+    Return(value) -> "return " <> to_string(value) <> ";"
+    Ident(value) -> value
+  }
 }

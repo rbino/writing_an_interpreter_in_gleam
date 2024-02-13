@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleam/result
 import monkey/token
@@ -10,6 +11,7 @@ pub type Node {
   Let(name: String, value: Node)
   Return(value: Node)
   Ident(ident: String)
+  Int(value: Int)
 }
 
 type Parser {
@@ -119,6 +121,7 @@ fn parse_expression(parser: Parser, _prec) {
 fn parse_prefix(parser: Parser) {
   case parser.remaining {
     [token.Ident(value), ..] -> Ok(#(Ident(value), advance(parser)))
+    [token.Int(value), ..] -> Ok(#(Int(value), advance(parser)))
 
     _ -> {
       use parser <- result.then(skip(parser, until: token.Semicolon))
@@ -171,5 +174,6 @@ pub fn to_string(node) {
       "let " <> name <> " = " <> to_string(value) <> ";"
     Return(value) -> "return " <> to_string(value) <> ";"
     Ident(value) -> value
+    Int(value) -> int.to_string(value)
   }
 }

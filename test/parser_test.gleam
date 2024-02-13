@@ -51,3 +51,19 @@ pub fn identifier_expression_test() {
   statement
   |> should.equal(parser.Ident("foobar"))
 }
+
+pub fn integer_expression_test() {
+  let input = "5;"
+
+  let result =
+    input
+    |> lexer.lex()
+    |> parser.parse()
+
+  should.be_ok(result)
+
+  let assert Ok([statement]) = result
+
+  statement
+  |> should.equal(parser.Int(5))
+}

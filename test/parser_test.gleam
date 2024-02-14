@@ -67,3 +67,19 @@ pub fn integer_expression_test() {
   statement
   |> should.equal(parser.Int(5))
 }
+
+pub fn prefix_expression_test() {
+  let input = "-10"
+
+  let result =
+    input
+    |> lexer.lex()
+    |> parser.parse()
+
+  should.be_ok(result)
+
+  let assert Ok([statement]) = result
+
+  statement
+  |> should.equal(parser.Prefix(op: parser.Minus, rhs: parser.Int(10)))
+}

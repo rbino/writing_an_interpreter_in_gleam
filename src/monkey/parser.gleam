@@ -1,24 +1,7 @@
-import gleam/int
 import gleam/list
 import gleam/result
+import monkey/ast
 import monkey/token
-
-pub type Program {
-  List(Node)
-}
-
-pub type Operator {
-  Bang
-  Minus
-}
-
-pub type Node {
-  Let(name: String, value: Node)
-  Return(value: Node)
-  Ident(ident: String)
-  Int(value: Int)
-  Prefix(op: Operator, rhs: Node)
-}
 
 type Parser {
   Parser(remaining: List(token.Token), errors: List(String))
@@ -86,7 +69,7 @@ fn parse_let_statement(parser: Parser) {
     [token.Ident(name), token.Assign, ..] -> {
       let parser = advance_n(parser, 2)
       use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
-      let node = Let(name: name, value: expr)
+      let node = ast.Let(name: name, value: expr)
       #(node, parser)
     }
 
@@ -112,7 +95,7 @@ fn parse_let_statement(parser: Parser) {
 
 fn parse_return_statement(parser: Parser) {
   use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
-  let node = Return(value: expr)
+  let node = ast.Return(value: expr)
   #(node, parser)
 }
 
@@ -132,10 +115,10 @@ fn parse_expression(parser: Parser, _prec) {
 
 fn parse_prefix(parser: Parser, token) {
   case token {
-    token.Ident(value) -> Ok(#(Ident(value), advance(parser)))
-    token.Int(value) -> Ok(#(Int(value), advance(parser)))
-    token.Minus -> parse_prefix_expression(parser, Minus)
-    token.Bang -> parse_prefix_expression(parser, Bang)
+    token.Ident(value) -> Ok(#(ast.Ident(value), advance(parser)))
+    token.Int(value) -> Ok(#(ast.Int(value), advance(parser)))
+    token.Minus -> parse_prefix_expression(parser, ast.Minus)
+    token.Bang -> parse_prefix_expression(parser, ast.Bang)
 
     _ -> {
       use parser <- result.then(skip(parser, until: token.Semicolon))
@@ -150,7 +133,7 @@ fn parse_prefix_expression(parser: Parser, op) {
     |> advance()
     |> parse_expression(prec_prefix)
   use #(rhs, parser) <- result.map(parse_result)
-  #(Prefix(op: op, rhs: rhs), parser)
+  #(ast.Prefix(op: op, rhs: rhs), parser)
 }
 
 fn consume_optional_semicolon(parser: Parser) {
@@ -201,22 +184,4 @@ fn add_unexpected_token_error(parser, expected token, got actual) {
   let error = "Expected " <> expected <> " but got " <> token.to_string(actual)
 
   Parser(..parser, errors: [error, ..parser.errors])
-}
-
-pub fn to_string(node) {
-  let op_to_string = fn(op) {
-    case op {
-      Bang -> "!"
-      Minus -> "-"
-    }
-  }
-
-  case node {
-    Let(name: name, value: value) ->
-      "let " <> name <> " = " <> to_string(value) <> ";"
-    Return(value) -> "return " <> to_string(value) <> ";"
-    Ident(value) -> value
-    Int(value) -> int.to_string(value)
-    Prefix(op: op, rhs: rhs) -> "(" <> op_to_string(op) <> to_string(rhs) <> ")"
-  }
 }

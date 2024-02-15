@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import monkey/ast
 import monkey/lexer
 import monkey/parser
 
@@ -30,47 +31,26 @@ pub fn parse_error_test() {
 }
 
 pub fn to_string_test() {
-  let statement = parser.Let(name: "myVar", value: parser.Ident("anotherVar"))
+  let statement = ast.Let(name: "myVar", value: ast.Ident("anotherVar"))
 
-  parser.to_string(statement)
+  ast.to_string(statement)
   |> should.equal("let myVar = anotherVar;")
 }
 
 pub fn identifier_expression_test() {
-  let input = "foobar;"
-
-  let result =
-    input
-    |> lexer.lex()
-    |> parser.parse()
-
-  should.be_ok(result)
-
-  let assert Ok([statement]) = result
-
-  statement
-  |> should.equal(parser.Ident("foobar"))
+  expression_test("foobar;", ast.Ident("foobar"))
 }
 
 pub fn integer_expression_test() {
-  let input = "5;"
-
-  let result =
-    input
-    |> lexer.lex()
-    |> parser.parse()
-
-  should.be_ok(result)
-
-  let assert Ok([statement]) = result
-
-  statement
-  |> should.equal(parser.Int(5))
+  expression_test("5;", ast.Int(5))
 }
 
 pub fn prefix_expression_test() {
-  let input = "-10"
+  expression_test("-10;", ast.Prefix(op: ast.Minus, rhs: ast.Int(10)))
+  expression_test("!foo", ast.Prefix(op: ast.Bang, rhs: ast.Ident("foo")))
+}
 
+fn expression_test(input, expected) {
   let result =
     input
     |> lexer.lex()
@@ -81,5 +61,5 @@ pub fn prefix_expression_test() {
   let assert Ok([statement]) = result
 
   statement
-  |> should.equal(parser.Prefix(op: parser.Minus, rhs: parser.Int(10)))
+  |> should.equal(expected)
 }

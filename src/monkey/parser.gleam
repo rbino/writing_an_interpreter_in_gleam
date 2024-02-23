@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -60,7 +61,11 @@ fn parse_statement(parser: Parser, token) {
       |> parse_return_statement()
     }
 
-    _ -> parse_expression(parser, prec_lowest)
+    _ -> {
+      use result <- result.map(parse_expression(parser, prec_lowest))
+      let #(expr, parser) = result
+      #(expr, consume_optional_semicolon(parser))
+    }
   }
 }
 
@@ -99,7 +104,7 @@ fn parse_return_statement(parser: Parser) {
   #(node, parser)
 }
 
-fn parse_expression(parser: Parser, _prec) {
+fn parse_expression(parser: Parser, base_prec) {
   case parser.remaining {
     [token.Eof] | [] ->
       parser
@@ -107,8 +112,8 @@ fn parse_expression(parser: Parser, _prec) {
       |> Error()
 
     [token, ..] -> {
-      use #(lhs, parser) <- result.map(parse_prefix(parser, token))
-      #(lhs, consume_optional_semicolon(parser))
+      use #(lhs, parser) <- result.try(parse_prefix(parser, token))
+      parse_infix(parser, lhs, base_prec)
     }
   }
 }
@@ -134,6 +139,51 @@ fn parse_prefix_expression(parser: Parser, op) {
     |> parse_expression(prec_prefix)
   use #(rhs, parser) <- result.map(parse_result)
   #(ast.Prefix(op: op, rhs: rhs), parser)
+}
+
+fn parse_infix(parser: Parser, lhs, base_prec) {
+  let next_prec = peek_precedence(parser)
+  use <- bool.guard(when: next_prec >= base_prec, return: Ok(#(lhs, parser)))
+  case parser.remaining {
+    [token, ..] -> {
+      let bin_op = case token {
+        token.Eq -> Ok(ast.Eq)
+        token.NotEq -> Ok(ast.NotEq)
+        token.LT -> Ok(ast.LT)
+        token.GT -> Ok(ast.GT)
+        token.Plus -> Ok(ast.Plus)
+        token.Minus -> Ok(ast.Minus)
+        token.Asterisk -> Ok(ast.Asterisk)
+        token.Slash -> Ok(ast.Slash)
+        _ -> Error(#(lhs, parser))
+      }
+
+      let infix_expr = {
+        use bin_op <- result.then(bin_op)
+        let rhs =
+          parser
+          |> advance()
+          |> parse_expression(next_prec)
+        case rhs {
+          Ok(#(rhs, parser)) ->
+        }
+      }
+    }
+  }
+}
+
+fn peek_precedence(parser: Parser) {
+  case parser.remaining {
+    [token.Eq, ..] -> prec_equals
+    [token.NotEq, ..] -> prec_equals
+    [token.LT, ..] -> prec_lessgreater
+    [token.GT, ..] -> prec_lessgreater
+    [token.Plus, ..] -> prec_sum
+    [token.Minus, ..] -> prec_sum
+    [token.Asterisk, ..] -> prec_product
+    [token.Slash, ..] -> prec_product
+    _ -> prec_lowest
+  }
 }
 
 fn consume_optional_semicolon(parser: Parser) {

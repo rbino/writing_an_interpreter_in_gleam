@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import gleam/list
 import monkey/ast
 import monkey/lexer
 import monkey/parser
@@ -48,6 +49,24 @@ pub fn integer_expression_test() {
 pub fn prefix_expression_test() {
   expression_test("-10;", ast.Prefix(op: ast.Minus, rhs: ast.Int(10)))
   expression_test("!foo", ast.Prefix(op: ast.Bang, rhs: ast.Ident("foo")))
+}
+
+pub fn infix_expression_test() {
+  [
+    #("+", ast.Plus),
+    #("-", ast.Minus),
+    #("*", ast.Asterisk),
+    #("/", ast.Slash),
+    #(">", ast.GT),
+    #("<", ast.LT),
+    #("==", ast.Eq),
+    #("!=", ast.NotEq),
+  ]
+  |> list.each(fn(under_test) {
+    let #(string_op, ast_op) = under_test
+    let expected = ast.Infix(lhs: ast.Int(5), op: ast_op, rhs: ast.Int(10))
+    expression_test("5 " <> string_op <> " 10;", expected)
+  })
 }
 
 fn expression_test(input, expected) {

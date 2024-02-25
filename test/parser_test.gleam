@@ -93,6 +93,11 @@ pub fn infix_expression_precedence_test() {
     #("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
     #("!true", "(!true)"),
     #("3 > 5 == false", "((3 > 5) == false)"),
+    #("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+    #("(5 + 5) * 2", "((5 + 5) * 2)"),
+    #("2 / (5 + 5)", "(2 / (5 + 5))"),
+    #("-(5 + 5)", "(-(5 + 5))"),
+    #("!(true == true)", "(!(true == true))"),
   ]
   |> list.each(fn(under_test) {
     let #(input, parenthesized) = under_test

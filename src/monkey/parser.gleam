@@ -127,6 +127,14 @@ fn parse_prefix(parser: Parser, token) {
     token.Minus -> parse_prefix_expression(parser, ast.Minus)
     token.Bang -> parse_prefix_expression(parser, ast.Bang)
 
+    token.LParen -> {
+      let parser = advance(parser)
+      use parse_result <- result.try(parse_expression(parser, prec_lowest))
+      let #(expr, parser) = parse_result
+      use parser <- result.map(expect(parser, token.RParen))
+      #(expr, parser)
+    }
+
     _ -> {
       use parser <- result.then(skip(parser, until: token.Semicolon))
       Error(parser)
@@ -221,6 +229,24 @@ fn advance_n(parser, n) {
   case n {
     0 -> parser
     n -> advance_n(parser, n - 1)
+  }
+}
+
+fn expect(parser: Parser, expected) {
+  case parser.remaining {
+    [token, ..] if token == expected -> Ok(advance(parser))
+    [token, ..] -> {
+      parser
+      |> advance()
+      |> add_unexpected_token_error(expected, token)
+      |> Error()
+    }
+    [token.Eof, ..] | [] -> {
+      parser
+      |> advance()
+      |> add_unexpected_eof_error()
+      |> Error()
+    }
   }
 }
 

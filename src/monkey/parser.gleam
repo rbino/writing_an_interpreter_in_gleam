@@ -111,6 +111,7 @@ fn parse_expression(parser: Parser, base_prec) {
       |> Error()
 
     [token, ..] -> {
+      let parser = advance(parser)
       use #(lhs, parser) <- result.try(parse_prefix(parser, token))
       parse_infix(parser, lhs, base_prec)
     }
@@ -119,15 +120,14 @@ fn parse_expression(parser: Parser, base_prec) {
 
 fn parse_prefix(parser: Parser, token) {
   case token {
-    token.Ident(value) -> Ok(#(ast.Ident(value), advance(parser)))
-    token.Int(value) -> Ok(#(ast.Int(value), advance(parser)))
-    token.True -> Ok(#(ast.True, advance(parser)))
-    token.False -> Ok(#(ast.False, advance(parser)))
+    token.Ident(value) -> Ok(#(ast.Ident(value), parser))
+    token.Int(value) -> Ok(#(ast.Int(value), parser))
+    token.True -> Ok(#(ast.True, parser))
+    token.False -> Ok(#(ast.False, parser))
     token.Minus -> parse_prefix_expression(parser, ast.Minus)
     token.Bang -> parse_prefix_expression(parser, ast.Bang)
 
     token.LParen -> {
-      let parser = advance(parser)
       use #(expr, parser) <- result.try(parse_expression(parser, prec_lowest))
       use parser <- result.map(expect(parser, token.RParen))
       #(expr, parser)
@@ -141,11 +141,7 @@ fn parse_prefix(parser: Parser, token) {
 }
 
 fn parse_prefix_expression(parser: Parser, op) {
-  let parse_result =
-    parser
-    |> advance()
-    |> parse_expression(prec_prefix)
-  use #(rhs, parser) <- result.map(parse_result)
+  use #(rhs, parser) <- result.map(parse_expression(parser, prec_prefix))
   #(ast.Prefix(op: op, rhs: rhs), parser)
 }
 

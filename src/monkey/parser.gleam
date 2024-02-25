@@ -142,7 +142,7 @@ fn parse_prefix(parser: Parser, token) {
 
 fn parse_prefix_expression(parser: Parser, op) {
   use #(rhs, parser) <- result.map(parse_expression(parser, prec_prefix))
-  #(ast.Prefix(op: op, rhs: rhs), parser)
+  #(op(rhs), parser)
 }
 
 fn parse_infix(parser: Parser, lhs, base_prec) {
@@ -150,15 +150,15 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
   use <- bool.guard(when: base_prec >= next_prec, return: Ok(#(lhs, parser)))
   case parser.remaining {
     [token, ..] -> {
-      let bin_op = case token {
+      let op = case token {
         token.Eq -> ast.Eq
         token.NotEq -> ast.NotEq
         token.LT -> ast.LT
         token.GT -> ast.GT
-        token.Plus -> ast.Plus
-        token.Minus -> ast.Minus
-        token.Asterisk -> ast.Asterisk
-        token.Slash -> ast.Slash
+        token.Plus -> ast.Add
+        token.Minus -> ast.Subtract
+        token.Asterisk -> ast.Multiply
+        token.Slash -> ast.Divide
         // We can safely panic here: peek_precedence returns prec_lowest
         // for all tokens which are not valid infix tokens, so we should
         // never get past bool.guard in those cases
@@ -167,7 +167,7 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
 
       let parser = advance(parser)
       use #(rhs, parser) <- result.try(parse_expression(parser, next_prec))
-      let node = ast.Infix(lhs: lhs, op: bin_op, rhs: rhs)
+      let node = op(lhs, rhs)
       parse_infix(parser, node, base_prec)
     }
 

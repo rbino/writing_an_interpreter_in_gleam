@@ -47,17 +47,17 @@ pub fn integer_expression_test() {
 }
 
 pub fn prefix_expression_test() {
-  expression_test("-10;", ast.Prefix(op: ast.Minus, rhs: ast.Int(10)))
-  expression_test("!foo", ast.Prefix(op: ast.Bang, rhs: ast.Ident("foo")))
-  expression_test("!true", ast.Prefix(op: ast.Bang, rhs: ast.True))
+  expression_test("-10;", ast.Minus(rhs: ast.Int(10)))
+  expression_test("!foo", ast.Bang(rhs: ast.Ident("foo")))
+  expression_test("!true", ast.Bang(rhs: ast.True))
 }
 
 pub fn infix_expression_test() {
   [
-    #("+", ast.Plus),
-    #("-", ast.Minus),
-    #("*", ast.Asterisk),
-    #("/", ast.Slash),
+    #("+", ast.Add),
+    #("-", ast.Subtract),
+    #("*", ast.Multiply),
+    #("/", ast.Divide),
     #(">", ast.GT),
     #("<", ast.LT),
     #("==", ast.Eq),
@@ -65,18 +65,12 @@ pub fn infix_expression_test() {
   ]
   |> list.each(fn(under_test) {
     let #(string_op, ast_op) = under_test
-    let expected = ast.Infix(lhs: ast.Int(5), op: ast_op, rhs: ast.Int(10))
+    let expected = ast_op(ast.Int(5), ast.Int(10))
     expression_test("5 " <> string_op <> " 10;", expected)
   })
 
-  expression_test(
-    "true == true",
-    ast.Infix(lhs: ast.True, op: ast.Eq, rhs: ast.True),
-  )
-  expression_test(
-    "false != true",
-    ast.Infix(lhs: ast.False, op: ast.NotEq, rhs: ast.True),
-  )
+  expression_test("true == true", ast.Eq(lhs: ast.True, rhs: ast.True))
+  expression_test("false != true", ast.NotEq(lhs: ast.False, rhs: ast.True))
 }
 
 pub fn infix_expression_precedence_test() {

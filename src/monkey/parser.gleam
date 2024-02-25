@@ -122,6 +122,8 @@ fn parse_prefix(parser: Parser, token) {
   case token {
     token.Ident(value) -> Ok(#(ast.Ident(value), advance(parser)))
     token.Int(value) -> Ok(#(ast.Int(value), advance(parser)))
+    token.True -> Ok(#(ast.True, advance(parser)))
+    token.False -> Ok(#(ast.False, advance(parser)))
     token.Minus -> parse_prefix_expression(parser, ast.Minus)
     token.Bang -> parse_prefix_expression(parser, ast.Bang)
 

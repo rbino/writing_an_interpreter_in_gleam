@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import gleam/list
 import monkey/ast
 import monkey/lexer
 import monkey/parser
@@ -50,6 +51,43 @@ pub fn prefix_expression_test() {
   expression_test("!foo", ast.Prefix(op: ast.Bang, rhs: ast.Ident("foo")))
 }
 
+pub fn infix_expression_test() {
+  [
+    #("+", ast.Plus),
+    #("-", ast.Minus),
+    #("*", ast.Asterisk),
+    #("/", ast.Slash),
+    #(">", ast.GT),
+    #("<", ast.LT),
+    #("==", ast.Eq),
+    #("!=", ast.NotEq),
+  ]
+  |> list.each(fn(under_test) {
+    let #(string_op, ast_op) = under_test
+    let expected = ast.Infix(lhs: ast.Int(5), op: ast_op, rhs: ast.Int(10))
+    expression_test("5 " <> string_op <> " 10;", expected)
+  })
+}
+
+pub fn infix_expression_precedence_test() {
+  [
+    #("!-a", "(!(-a))"),
+    #("a + b + c", "((a + b) + c)"),
+    #("a + b - c", "((a + b) - c)"),
+    #("a * b * c", "((a * b) * c)"),
+    #("a * b / c", "((a * b) / c)"),
+    #("a + b / c", "(a + (b / c))"),
+    #("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+    #("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+    #("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+    #("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, parenthesized) = under_test
+    expression_precedence_test(input, parenthesized)
+  })
+}
+
 fn expression_test(input, expected) {
   let result =
     input
@@ -62,4 +100,18 @@ fn expression_test(input, expected) {
 
   statement
   |> should.equal(expected)
+}
+
+fn expression_precedence_test(input, parenthesized) {
+  let result =
+    input
+    |> lexer.lex()
+    |> parser.parse()
+
+  should.be_ok(result)
+
+  let assert Ok([expr]) = result
+  expr
+  |> ast.to_string()
+  |> should.equal(parenthesized)
 }

@@ -6,7 +6,14 @@ pub type Program {
 
 pub type Operator {
   Bang
+  Plus
   Minus
+  Asterisk
+  Slash
+  GT
+  LT
+  Eq
+  NotEq
 }
 
 pub type Node {
@@ -15,13 +22,21 @@ pub type Node {
   Ident(ident: String)
   Int(value: Int)
   Prefix(op: Operator, rhs: Node)
+  Infix(lhs: Node, op: Operator, rhs: Node)
 }
 
 pub fn to_string(node) {
   let op_to_string = fn(op) {
     case op {
       Bang -> "!"
+      Plus -> "+"
       Minus -> "-"
+      Asterisk -> "*"
+      Slash -> "/"
+      GT -> ">"
+      LT -> "<"
+      Eq -> "=="
+      NotEq -> "!="
     }
   }
 
@@ -32,5 +47,13 @@ pub fn to_string(node) {
     Ident(value) -> value
     Int(value) -> int.to_string(value)
     Prefix(op: op, rhs: rhs) -> "(" <> op_to_string(op) <> to_string(rhs) <> ")"
+    Infix(lhs: lhs, op: op, rhs: rhs) ->
+      "("
+      <> to_string(lhs)
+      <> " "
+      <> op_to_string(op)
+      <> " "
+      <> to_string(rhs)
+      <> ")"
   }
 }

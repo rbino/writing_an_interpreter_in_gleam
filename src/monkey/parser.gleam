@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -60,7 +61,11 @@ fn parse_statement(parser: Parser, token) {
       |> parse_return_statement()
     }
 
-    _ -> parse_expression(parser, prec_lowest)
+    _ -> {
+      use result <- result.map(parse_expression(parser, prec_lowest))
+      let #(expr, parser) = result
+      #(expr, consume_optional_semicolon(parser))
+    }
   }
 }
 
@@ -99,7 +104,7 @@ fn parse_return_statement(parser: Parser) {
   #(node, parser)
 }
 
-fn parse_expression(parser: Parser, _prec) {
+fn parse_expression(parser: Parser, base_prec) {
   case parser.remaining {
     [token.Eof] | [] ->
       parser
@@ -107,8 +112,8 @@ fn parse_expression(parser: Parser, _prec) {
       |> Error()
 
     [token, ..] -> {
-      use #(lhs, parser) <- result.map(parse_prefix(parser, token))
-      #(lhs, consume_optional_semicolon(parser))
+      use #(lhs, parser) <- result.try(parse_prefix(parser, token))
+      parse_infix(parser, lhs, base_prec)
     }
   }
 }
@@ -134,6 +139,54 @@ fn parse_prefix_expression(parser: Parser, op) {
     |> parse_expression(prec_prefix)
   use #(rhs, parser) <- result.map(parse_result)
   #(ast.Prefix(op: op, rhs: rhs), parser)
+}
+
+fn parse_infix(parser: Parser, lhs, base_prec) {
+  let next_prec = peek_precedence(parser)
+  use <- bool.guard(when: base_prec >= next_prec, return: Ok(#(lhs, parser)))
+  case parser.remaining {
+    [token, ..] -> {
+      let bin_op = case token {
+        token.Eq -> ast.Eq
+        token.NotEq -> ast.NotEq
+        token.LT -> ast.LT
+        token.GT -> ast.GT
+        token.Plus -> ast.Plus
+        token.Minus -> ast.Minus
+        token.Asterisk -> ast.Asterisk
+        token.Slash -> ast.Slash
+        // We can safely panic here: peek_precedence returns prec_lowest
+        // for all tokens which are not valid infix tokens, so we should
+        // never get past bool.guard in those cases
+        _ -> panic
+      }
+
+      let parser = advance(parser)
+      use parse_result <- result.try(parse_expression(parser, next_prec))
+      let #(rhs, parser) = parse_result
+      let node = ast.Infix(lhs: lhs, op: bin_op, rhs: rhs)
+      parse_infix(parser, node, base_prec)
+    }
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
+  }
+}
+
+fn peek_precedence(parser: Parser) {
+  case parser.remaining {
+    [token.Eq, ..] -> prec_equals
+    [token.NotEq, ..] -> prec_equals
+    [token.LT, ..] -> prec_lessgreater
+    [token.GT, ..] -> prec_lessgreater
+    [token.Plus, ..] -> prec_sum
+    [token.Minus, ..] -> prec_sum
+    [token.Asterisk, ..] -> prec_product
+    [token.Slash, ..] -> prec_product
+    _ -> prec_lowest
+  }
 }
 
 fn consume_optional_semicolon(parser: Parser) {

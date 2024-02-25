@@ -62,8 +62,7 @@ fn parse_statement(parser: Parser, token) {
     }
 
     _ -> {
-      use result <- result.map(parse_expression(parser, prec_lowest))
-      let #(expr, parser) = result
+      use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
       #(expr, consume_optional_semicolon(parser))
     }
   }
@@ -129,8 +128,7 @@ fn parse_prefix(parser: Parser, token) {
 
     token.LParen -> {
       let parser = advance(parser)
-      use parse_result <- result.try(parse_expression(parser, prec_lowest))
-      let #(expr, parser) = parse_result
+      use #(expr, parser) <- result.try(parse_expression(parser, prec_lowest))
       use parser <- result.map(expect(parser, token.RParen))
       #(expr, parser)
     }
@@ -172,8 +170,7 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
       }
 
       let parser = advance(parser)
-      use parse_result <- result.try(parse_expression(parser, next_prec))
-      let #(rhs, parser) = parse_result
+      use #(rhs, parser) <- result.try(parse_expression(parser, next_prec))
       let node = ast.Infix(lhs: lhs, op: bin_op, rhs: rhs)
       parse_infix(parser, node, base_prec)
     }

@@ -1,8 +1,7 @@
 import gleam/int
 
-pub type Program {
+pub type Program =
   List(Node)
-}
 
 pub type Node {
   Let(name: String, value: Node)

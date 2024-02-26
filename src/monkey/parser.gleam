@@ -49,22 +49,17 @@ fn do_parse(parser: Parser, program) {
 
 fn parse_statement(parser: Parser, token) {
   case token {
-    token.Let -> {
+    token.Let ->
       parser
       |> advance()
       |> parse_let_statement()
-    }
 
-    token.Return -> {
+    token.Return ->
       parser
       |> advance()
       |> parse_return_statement()
-    }
 
-    _ -> {
-      use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
-      #(expr, consume_optional_semicolon(parser))
-    }
+    _ -> parse_expression(parser, prec_lowest)
   }
 }
 
@@ -74,7 +69,7 @@ fn parse_let_statement(parser: Parser) {
       let parser = advance_n(parser, 2)
       use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
       let node = ast.Let(name: name, value: expr)
-      #(node, parser)
+      #(node, consume_optional_semicolon(parser))
     }
 
     [token.Ident(_), token, ..] -> {
@@ -100,7 +95,7 @@ fn parse_let_statement(parser: Parser) {
 fn parse_return_statement(parser: Parser) {
   use #(expr, parser) <- result.map(parse_expression(parser, prec_lowest))
   let node = ast.Return(value: expr)
-  #(node, parser)
+  #(node, consume_optional_semicolon(parser))
 }
 
 fn parse_expression(parser: Parser, base_prec) {
@@ -113,7 +108,8 @@ fn parse_expression(parser: Parser, base_prec) {
     [token, ..] -> {
       let parser = advance(parser)
       use #(lhs, parser) <- result.try(parse_prefix(parser, token))
-      parse_infix(parser, lhs, base_prec)
+      use #(expr, parser) <- result.map(parse_infix(parser, lhs, base_prec))
+      #(expr, consume_optional_semicolon(parser))
     }
   }
 }

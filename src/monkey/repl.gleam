@@ -2,8 +2,9 @@ import gleam/erlang
 import gleam/io
 import gleam/list
 import gleam/result
-import monkey/ast
+import monkey/evaluator
 import monkey/lexer
+import monkey/obj
 import monkey/parser
 
 const prompt = ">> "
@@ -18,11 +19,10 @@ fn loop() {
     let tokens = lexer.lex(line)
     case parser.parse(tokens) {
       Ok(program) ->
-        list.each(program, fn(statement) {
-          statement
-          |> ast.to_string()
-          |> io.println()
-        })
+        case evaluator.eval(program) {
+          Ok(obj) -> io.println(obj.inspect(obj))
+          Error(Nil) -> io.println("Eval error")
+        }
 
       Error(errors) -> {
         io.println("Errors during parsing:")

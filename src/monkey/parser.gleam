@@ -134,7 +134,7 @@ fn parse_prefix(parser: Parser, token) {
 
     token ->
       parser
-      |> add_invalid_prefix_error(token)
+      |> add_unexpected_token_error("an expression", token)
       |> Error()
   }
 }
@@ -360,11 +360,6 @@ fn expect(parser: Parser, expected) {
       |> Error()
     }
   }
-}
-
-fn add_invalid_prefix_error(parser, token) {
-  let error = "Invalid prefix token: " <> token.to_string(token)
-  Parser(..parser, errors: [error, ..parser.errors])
 }
 
 fn add_unexpected_eof_error(parser) {

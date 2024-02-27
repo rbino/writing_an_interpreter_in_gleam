@@ -40,7 +40,7 @@ fn do_parse(parser: Parser, program) {
 
         Error(parser) -> {
           parser
-          |> advance()
+          |> skip(until: token.Semicolon)
           |> do_parse(program)
         }
       }
@@ -86,7 +86,7 @@ fn parse_let_statement(parser: Parser) {
 
     [] -> {
       parser
-      |> add_unexpected_token_error(expected: "an identifier", got: token.Eof)
+      |> add_unexpected_eof_error()
       |> Error()
     }
   }
@@ -132,10 +132,10 @@ fn parse_prefix(parser: Parser, token) {
     token.If -> parse_if_expression(parser)
     token.Fn -> parse_function_literal(parser)
 
-    _ -> {
-      use parser <- result.then(skip(parser, until: token.Semicolon))
-      Error(parser)
-    }
+    token ->
+      parser
+      |> add_invalid_prefix_error(token)
+      |> Error()
   }
 }
 
@@ -323,19 +323,13 @@ fn consume_optional_semicolon(parser: Parser) {
 
 fn skip(parser: Parser, until target_token) {
   case parser.remaining {
-    [token, ..] if token == target_token -> Ok(parser)
+    [token, ..] if token == target_token -> advance(parser)
     [_token, ..] -> {
       parser
       |> advance()
       |> skip(until: target_token)
     }
-    [] ->
-      parser
-      |> add_unexpected_token_error(
-        expected: token.to_string(target_token),
-        got: token.Eof,
-      )
-      |> Error()
+    [] -> parser
   }
 }
 
@@ -368,8 +362,13 @@ fn expect(parser: Parser, expected) {
   }
 }
 
+fn add_invalid_prefix_error(parser, token) {
+  let error = "Invalid prefix token: " <> token.to_string(token)
+  Parser(..parser, errors: [error, ..parser.errors])
+}
+
 fn add_unexpected_eof_error(parser) {
-  let error = "Unexpected EOF"
+  let error = "Unexpected end of file"
   Parser(..parser, errors: [error, ..parser.errors])
 }
 

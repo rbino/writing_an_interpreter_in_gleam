@@ -15,7 +15,7 @@ pub fn parse_error_test() {
     "let x 5;
   let = 10;
   let 838383;
-  let y = 6"
+  let x ="
 
   let result =
     input
@@ -28,7 +28,7 @@ pub fn parse_error_test() {
   should.equal(error_1, "Expected = but got 5")
   should.equal(error_2, "Expected an identifier but got =")
   should.equal(error_3, "Expected an identifier but got 838383")
-  should.equal(error_4, "Expected ; but got EOF")
+  should.equal(error_4, "Unexpected end of file")
 }
 
 pub fn to_string_test() {

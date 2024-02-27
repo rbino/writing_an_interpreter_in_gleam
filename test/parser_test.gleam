@@ -118,6 +118,29 @@ pub fn if_test() {
   expression_test(input, expected)
 }
 
+pub fn function_literal_test() {
+  let input = "fn(a, b) { a + b }"
+  let expected =
+    ast.Fn(
+      parameters: ["a", "b"],
+      body: ast.Block([ast.Add(lhs: ast.Ident("a"), rhs: ast.Ident("b"))]),
+    )
+  expression_test(input, expected)
+
+  let input = "fn(x) { x * y }"
+  let expected =
+    ast.Fn(
+      parameters: ["x"],
+      body: ast.Block([ast.Multiply(lhs: ast.Ident("x"), rhs: ast.Ident("y"))]),
+    )
+  expression_test(input, expected)
+
+  let input = "fn() { return 42; }"
+  let expected =
+    ast.Fn(parameters: [], body: ast.Block([ast.Return(ast.Int(42))]))
+  expression_test(input, expected)
+}
+
 fn expression_test(input, expected) {
   let result =
     input

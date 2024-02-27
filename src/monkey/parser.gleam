@@ -130,6 +130,7 @@ fn parse_prefix(parser: Parser, token) {
     }
 
     token.If -> parse_if_expression(parser)
+    token.Fn -> parse_function_literal(parser)
 
     _ -> {
       use parser <- result.then(skip(parser, until: token.Semicolon))
@@ -166,6 +167,37 @@ fn parse_if_expression(parser: Parser) {
       let node = ast.If(condition: condition, consequence: consequence)
       Ok(#(node, parser))
     }
+  }
+}
+
+fn parse_function_literal(parser: Parser) {
+  use parser <- result.try(expect(parser, token.LParen))
+  use #(parameters, parser) <- result.try(parse_function_parameters(parser, []))
+  use #(body, parser) <- result.map(parse_block(parser))
+  let node = ast.Fn(parameters: parameters, body: body)
+  #(node, parser)
+}
+
+fn parse_function_parameters(parser: Parser, params) {
+  case parser.remaining {
+    [token.Ident(param), token.Comma, ..] -> {
+      parse_function_parameters(advance_n(parser, 2), [param, ..params])
+    }
+
+    [token.Ident(param), token.RParen, ..] ->
+      Ok(#(list.reverse([param, ..params]), advance_n(parser, 2)))
+
+    [token.RParen, ..] -> Ok(#(params, advance(parser)))
+
+    [token.Eof] | [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
+
+    [token, ..] ->
+      parser
+      |> add_unexpected_token_error(token.Ident(""), token)
+      |> Error()
   }
 }
 

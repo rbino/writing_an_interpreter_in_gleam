@@ -21,12 +21,12 @@ fn loop() {
         list.each(program, fn(statement) {
           statement
           |> ast.to_string()
-          |> io.println_error()
+          |> io.println()
         })
 
       Error(errors) -> {
-        io.println_error("Errors during parsing:")
-        list.each(errors, fn(error) { io.println_error("  " <> error) })
+        io.println("Errors during parsing:")
+        list.each(errors, fn(error) { io.println("  " <> error) })
       }
     }
   }

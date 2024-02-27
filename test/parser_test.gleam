@@ -99,6 +99,25 @@ pub fn infix_expression_precedence_test() {
   })
 }
 
+pub fn if_test() {
+  let input = "if (x < y) { x }"
+  let expected =
+    ast.If(
+      condition: ast.LT(lhs: ast.Ident("x"), rhs: ast.Ident("y")),
+      consequence: ast.Block([ast.Ident("x")]),
+    )
+  expression_test(input, expected)
+
+  let input = "if (z == true) { x } else { y }"
+  let expected =
+    ast.IfElse(
+      condition: ast.Eq(lhs: ast.Ident("z"), rhs: ast.True),
+      consequence: ast.Block([ast.Ident("x")]),
+      alternative: ast.Block([ast.Ident("y")]),
+    )
+  expression_test(input, expected)
+}
+
 fn expression_test(input, expected) {
   let result =
     input

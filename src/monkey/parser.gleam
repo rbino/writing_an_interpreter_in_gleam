@@ -129,6 +129,8 @@ fn parse_prefix(parser: Parser, token) {
       #(expr, parser)
     }
 
+    token.If -> parse_if_expression(parser)
+
     _ -> {
       use parser <- result.then(skip(parser, until: token.Semicolon))
       Error(parser)
@@ -139,6 +141,32 @@ fn parse_prefix(parser: Parser, token) {
 fn parse_prefix_expression(parser: Parser, op) {
   use #(rhs, parser) <- result.map(parse_expression(parser, prec_prefix))
   #(op(rhs), parser)
+}
+
+fn parse_if_expression(parser: Parser) {
+  use parser <- result.try(expect(parser, token.LParen))
+  use #(condition, parser) <- result.try(parse_expression(parser, prec_lowest))
+  use parser <- result.try(expect(parser, token.RParen))
+  use #(consequence, parser) <- result.try(parse_block(parser))
+  let parser: Parser = parser
+  case parser.remaining {
+    [token.Else, ..] -> {
+      let parser = advance(parser)
+      use #(alternative, parser) <- result.map(parse_block(parser))
+      let node =
+        ast.IfElse(
+          condition: condition,
+          consequence: consequence,
+          alternative: alternative,
+        )
+      #(node, parser)
+    }
+
+    _ -> {
+      let node = ast.If(condition: condition, consequence: consequence)
+      Ok(#(node, parser))
+    }
+  }
 }
 
 fn parse_infix(parser: Parser, lhs, base_prec) {
@@ -171,6 +199,34 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
       parser
       |> add_unexpected_eof_error()
       |> Error()
+  }
+}
+
+fn parse_block(parser: Parser) {
+  use parser <- result.try(expect(parser, token.LBrace))
+  do_parse_block(parser, [])
+}
+
+fn do_parse_block(parser: Parser, statements) {
+  case parser.remaining {
+    [token.Eof] | [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
+
+    [token.RBrace, ..] -> {
+      let block =
+        statements
+        |> list.reverse()
+        |> ast.Block()
+
+      Ok(#(block, advance(parser)))
+    }
+
+    [token, ..] -> {
+      use #(statement, parser) <- result.try(parse_statement(parser, token))
+      do_parse_block(parser, [statement, ..statements])
+    }
   }
 }
 

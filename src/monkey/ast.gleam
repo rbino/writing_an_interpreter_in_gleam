@@ -10,6 +10,7 @@ pub type Node {
   Let(name: String, value: Node)
   Return(value: Node)
   Fn(parameters: List(String), body: Node)
+  Call(function: Node, arguments: List(Node))
   If(condition: Node, consequence: Node)
   IfElse(condition: Node, consequence: Node, alternative: Node)
   Ident(ident: String)
@@ -39,6 +40,13 @@ pub fn to_string(node) {
     Return(value) -> "return " <> to_string(value) <> ";"
     Fn(parameters, body) ->
       "fn(" <> string.join(parameters, with: ", ") <> ") " <> to_string(body)
+    Call(function, arguments) -> {
+      let argument_list =
+        list.map(arguments, to_string)
+        |> string.join(", ")
+
+      to_string(function) <> "(" <> argument_list <> ")"
+    }
     If(condition, consequence) ->
       "if " <> to_string(condition) <> " " <> to_string(consequence)
     IfElse(condition, consequence, alternative) ->

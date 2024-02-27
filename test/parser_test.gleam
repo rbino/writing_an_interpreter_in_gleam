@@ -141,6 +141,33 @@ pub fn function_literal_test() {
   expression_test(input, expected)
 }
 
+pub fn function_call_test() {
+  let input = "foo(bar, 42 + baz)"
+  let expected =
+    ast.Call(function: ast.Ident("foo"), arguments: [
+      ast.Ident("bar"),
+      ast.Add(lhs: ast.Int(42), rhs: ast.Ident("baz")),
+    ])
+  expression_test(input, expected)
+
+  let input = "fn(x, y){ return x * y }(10, 32)"
+  let expected =
+    ast.Call(
+      function: ast.Fn(
+        parameters: ["x", "y"],
+        body: ast.Block([
+          ast.Return(ast.Multiply(lhs: ast.Ident("x"), rhs: ast.Ident("y"))),
+        ]),
+      ),
+      arguments: [ast.Int(10), ast.Int(32)],
+    )
+  expression_test(input, expected)
+
+  let input = "self()"
+  let expected = ast.Call(function: ast.Ident("self"), arguments: [])
+  expression_test(input, expected)
+}
+
 fn expression_test(input, expected) {
   let result =
     input

@@ -33,6 +33,24 @@ pub fn eval_boolean_test() {
   })
 }
 
+pub fn eval_bang_operator_test() {
+  [
+    #("!true", obj.False),
+    #("!false", obj.True),
+    #("!5", obj.False),
+    #("!!true", obj.True),
+    #("!!false", obj.False),
+    #("!!5", obj.True),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+}
+
 fn eval(input) {
   let result =
     input

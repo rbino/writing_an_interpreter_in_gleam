@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/result
 import monkey/ast
 import monkey/obj
 
@@ -11,11 +12,22 @@ pub fn eval(program: ast.Program) {
   })
 }
 
-pub fn do_eval(node) {
+fn do_eval(node) {
   case node {
     ast.Int(value) -> Ok(obj.Int(value))
     ast.True -> Ok(obj.True)
     ast.False -> Ok(obj.False)
+    ast.Bang(rhs) -> {
+      use rhs_obj <- result.map(do_eval(rhs))
+      eval_bang(rhs_obj)
+    }
     _ -> Error(Nil)
+  }
+}
+
+fn eval_bang(rhs) {
+  case rhs {
+    obj.False | obj.Null -> obj.True
+    _ -> obj.False
   }
 }

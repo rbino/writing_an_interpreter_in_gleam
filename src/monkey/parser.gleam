@@ -74,19 +74,19 @@ fn parse_let_statement(parser: Parser) {
 
     [token.Ident(_), token, ..] -> {
       parser
-      |> add_unexpected_token_error(expected: token.Assign, got: token)
+      |> add_unexpected_token_error(expected: "=", got: token)
       |> Error()
     }
 
     [token, ..] -> {
       parser
-      |> add_unexpected_token_error(expected: token.Ident(""), got: token)
+      |> add_unexpected_token_error(expected: "an identifier", got: token)
       |> Error()
     }
 
     [] -> {
       parser
-      |> add_unexpected_token_error(expected: token.Ident(""), got: token.Eof)
+      |> add_unexpected_token_error(expected: "an identifier", got: token.Eof)
       |> Error()
     }
   }
@@ -196,7 +196,7 @@ fn parse_function_parameters(parser: Parser, params) {
 
     [token, ..] ->
       parser
-      |> add_unexpected_token_error(token.Ident(""), token)
+      |> add_unexpected_token_error("an identifier", token)
       |> Error()
   }
 }
@@ -293,7 +293,10 @@ fn skip(parser: Parser, until target_token) {
     }
     [] ->
       parser
-      |> add_unexpected_token_error(expected: target_token, got: token.Eof)
+      |> add_unexpected_token_error(
+        expected: token.to_string(target_token),
+        got: token.Eof,
+      )
       |> Error()
   }
 }
@@ -315,7 +318,7 @@ fn expect(parser: Parser, expected) {
     [token, ..] -> {
       parser
       |> advance()
-      |> add_unexpected_token_error(expected, token)
+      |> add_unexpected_token_error(token.to_string(expected), token)
       |> Error()
     }
     [token.Eof, ..] | [] -> {
@@ -333,13 +336,7 @@ fn add_unexpected_eof_error(parser) {
 }
 
 fn add_unexpected_token_error(parser, expected token, got actual) {
-  let expected = case token {
-    token.Ident(_) -> "an identifier"
-    token.Int(_) -> "an integer"
-    token -> token.to_string(token)
-  }
-
-  let error = "Expected " <> expected <> " but got " <> token.to_string(actual)
+  let error = "Expected " <> token <> " but got " <> token.to_string(actual)
 
   Parser(..parser, errors: [error, ..parser.errors])
 }

@@ -31,13 +31,16 @@ pub type Node {
 
 pub fn to_string(node) {
   case node {
-    Block(statements) ->
-      statements
-      |> list.map(to_string)
-      |> string.join(with: "")
-    Let(name: name, value: value) ->
-      "let " <> name <> " = " <> to_string(value) <> ";"
-    Return(value) -> "return " <> to_string(value) <> ";"
+    Block(statements) -> {
+      let statements =
+        statements
+        |> list.map(to_string)
+        |> string.join(with: "; ")
+
+      "{ " <> statements <> " }"
+    }
+    Let(name: name, value: value) -> "let " <> name <> " = " <> to_string(value)
+    Return(value) -> "return " <> to_string(value)
     Fn(parameters, body) ->
       "fn(" <> string.join(parameters, with: ", ") <> ") " <> to_string(body)
     Call(function, arguments) -> {
@@ -48,7 +51,7 @@ pub fn to_string(node) {
       to_string(function) <> "(" <> argument_list <> ")"
     }
     If(condition, consequence) ->
-      "if " <> to_string(condition) <> " " <> to_string(consequence)
+      "if (" <> to_string(condition) <> ") " <> to_string(consequence)
     IfElse(condition, consequence, alternative) ->
       "if ("
       <> to_string(condition)

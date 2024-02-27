@@ -35,7 +35,7 @@ pub fn to_string_test() {
   let statement = ast.Let(name: "myVar", value: ast.Ident("anotherVar"))
 
   ast.to_string(statement)
-  |> should.equal("let myVar = anotherVar;")
+  |> should.equal("let myVar = anotherVar")
 }
 
 pub fn identifier_expression_test() {

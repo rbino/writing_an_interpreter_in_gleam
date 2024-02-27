@@ -46,7 +46,7 @@ if (5 < 10) {
     token.Let,
     token.Ident("add"),
     token.Assign,
-    token.Function,
+    token.Fn,
     token.LParen,
     token.Ident("x"),
     token.Comma,

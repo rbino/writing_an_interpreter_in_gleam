@@ -31,7 +31,7 @@ pub type Token {
   RBrace
 
   // Keywords
-  Function
+  Fn
   Let
   True
   False
@@ -61,7 +61,7 @@ pub fn to_string(token) {
     RParen -> ")"
     LBrace -> "{"
     RBrace -> "}"
-    Function -> "fun"
+    Fn -> "fn"
     Let -> "let"
     True -> "true"
     False -> "false"

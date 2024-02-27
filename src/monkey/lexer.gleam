@@ -44,7 +44,7 @@ fn do_lex(tokens, remaining) {
     ["t", "r", "u", "e", ..rest] -> do_lex([token.True, ..tokens], rest)
     ["e", "l", "s", "e", ..rest] -> do_lex([token.Else, ..tokens], rest)
     ["l", "e", "t", ..rest] -> do_lex([token.Let, ..tokens], rest)
-    ["f", "n", ..rest] -> do_lex([token.Function, ..tokens], rest)
+    ["f", "n", ..rest] -> do_lex([token.Fn, ..tokens], rest)
     ["i", "f", ..rest] -> do_lex([token.If, ..tokens], rest)
     ["=", "=", ..rest] -> do_lex([token.Eq, ..tokens], rest)
     ["!", "=", ..rest] -> do_lex([token.NotEq, ..tokens], rest)

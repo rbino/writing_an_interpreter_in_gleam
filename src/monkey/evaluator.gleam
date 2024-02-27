@@ -14,6 +14,8 @@ pub fn eval(program: ast.Program) {
 pub fn do_eval(node) {
   case node {
     ast.Int(value) -> Ok(obj.Int(value))
+    ast.True -> Ok(obj.True)
+    ast.False -> Ok(obj.False)
     _ -> Error(Nil)
   }
 }

@@ -22,6 +22,17 @@ pub fn eval_integer_test() {
   })
 }
 
+pub fn eval_boolean_test() {
+  [#("true", obj.True), #("false", obj.False)]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+}
+
 fn eval(input) {
   let result =
     input

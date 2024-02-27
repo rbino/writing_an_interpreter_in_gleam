@@ -2,8 +2,9 @@ import gleam/erlang
 import gleam/io
 import gleam/list
 import gleam/result
-import gleam/string
+import monkey/ast
 import monkey/lexer
+import monkey/parser
 
 const prompt = ">> "
 
@@ -15,11 +16,19 @@ fn loop() {
   let _ = {
     use line <- result.map(erlang.get_line(prompt))
     let tokens = lexer.lex(line)
-    list.each(tokens, fn(token) {
-      token
-      |> string.inspect()
-      |> io.println()
-    })
+    case parser.parse(tokens) {
+      Ok(program) ->
+        list.each(program, fn(statement) {
+          statement
+          |> ast.to_string()
+          |> io.println_error()
+        })
+
+      Error(errors) -> {
+        io.println_error("Errors during parsing:")
+        list.each(errors, fn(error) { io.println_error("  " <> error) })
+      }
+    }
   }
 
   loop()

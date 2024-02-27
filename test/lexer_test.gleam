@@ -106,7 +106,6 @@ if (5 < 10) {
     token.NotEq,
     token.Int(9),
     token.Semicolon,
-    token.Eof,
   ]
 
   let tokens = lexer.lex(input)

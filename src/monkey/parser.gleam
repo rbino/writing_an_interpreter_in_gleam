@@ -28,12 +28,6 @@ pub fn parse(tokens) {
 
 fn do_parse(parser: Parser, program) {
   case parser.remaining {
-    [token.Eof] | [] ->
-      case parser.errors {
-        [] -> Ok(list.reverse(program))
-        errors -> Error(list.reverse(errors))
-      }
-
     [token, ..] ->
       case parse_statement(parser, token) {
         Ok(#(node, parser)) -> do_parse(parser, [node, ..program])
@@ -43,6 +37,12 @@ fn do_parse(parser: Parser, program) {
           |> skip(until: token.Semicolon)
           |> do_parse(program)
         }
+      }
+
+    [] ->
+      case parser.errors {
+        [] -> Ok(list.reverse(program))
+        errors -> Error(list.reverse(errors))
       }
   }
 }
@@ -100,17 +100,17 @@ fn parse_return_statement(parser: Parser) {
 
 fn parse_expression(parser: Parser, base_prec) {
   case parser.remaining {
-    [token.Eof] | [] ->
-      parser
-      |> add_unexpected_eof_error()
-      |> Error()
-
     [token, ..] -> {
       let parser = advance(parser)
       use #(lhs, parser) <- result.try(parse_prefix(parser, token))
       use #(expr, parser) <- result.map(parse_infix(parser, lhs, base_prec))
       #(expr, consume_optional_semicolon(parser))
     }
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
   }
 }
 
@@ -189,14 +189,14 @@ fn parse_function_parameters(parser: Parser, params) {
 
     [token.RParen, ..] -> Ok(#(params, advance(parser)))
 
-    [token.Eof] | [] ->
-      parser
-      |> add_unexpected_eof_error()
-      |> Error()
-
     [token, ..] ->
       parser
       |> add_unexpected_token_error("an identifier", token)
+      |> Error()
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
       |> Error()
   }
 }
@@ -257,14 +257,14 @@ fn parse_call_arguments(parser: Parser, arguments) {
         [token.RParen, ..] ->
           Ok(#(list.reverse([argument, ..arguments]), advance(parser)))
 
-        [token.Eof] | [] ->
-          parser
-          |> add_unexpected_eof_error()
-          |> Error()
-
         [token, ..] ->
           parser
           |> add_unexpected_token_error(", or )", token)
+          |> Error()
+
+        [] ->
+          parser
+          |> add_unexpected_eof_error()
           |> Error()
       }
     }
@@ -278,11 +278,6 @@ fn parse_block(parser: Parser) {
 
 fn do_parse_block(parser: Parser, statements) {
   case parser.remaining {
-    [token.Eof] | [] ->
-      parser
-      |> add_unexpected_eof_error()
-      |> Error()
-
     [token.RBrace, ..] -> {
       let block =
         statements
@@ -296,6 +291,11 @@ fn do_parse_block(parser: Parser, statements) {
       use #(statement, parser) <- result.try(parse_statement(parser, token))
       do_parse_block(parser, [statement, ..statements])
     }
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
   }
 }
 
@@ -353,7 +353,7 @@ fn expect(parser: Parser, expected) {
       |> add_unexpected_token_error(token.to_string(expected), token)
       |> Error()
     }
-    [token.Eof, ..] | [] -> {
+    [] -> {
       parser
       |> advance()
       |> add_unexpected_eof_error()

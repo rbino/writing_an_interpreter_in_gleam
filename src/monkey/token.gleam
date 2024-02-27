@@ -2,7 +2,6 @@ import gleam/int
 
 pub type Token {
   Illegal(value: String)
-  Eof
 
   // Identifiers + literals
   Ident(value: String)
@@ -44,7 +43,6 @@ pub fn to_string(token) {
   case token {
     Ident(value) | Illegal(value) -> value
     Int(value) -> int.to_string(value)
-    Eof -> "EOF"
     Assign -> "="
     Plus -> "+"
     Minus -> "-"

@@ -74,9 +74,7 @@ fn do_lex(tokens, remaining) {
       do_lex([token.Illegal(c), ..tokens], rest)
     }
 
-    [] ->
-      [token.Eof, ..tokens]
-      |> list.reverse()
+    [] -> list.reverse(tokens)
   }
 }
 

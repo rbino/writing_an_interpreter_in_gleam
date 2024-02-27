@@ -51,6 +51,24 @@ pub fn eval_bang_operator_test() {
   })
 }
 
+pub fn eval_minus_operator_test() {
+  [#("-5", -5), #("--7", 7)]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(obj.Int(expected))
+  })
+
+  ["-true", "-false"]
+  |> list.each(fn(input) {
+    input
+    |> eval_error()
+    |> should.equal(evaluator.ArithmeticError)
+  })
+}
+
 fn eval(input) {
   let result =
     input
@@ -60,4 +78,15 @@ fn eval(input) {
   let assert Ok(program) = result
   let assert Ok(obj) = evaluator.eval(program)
   obj
+}
+
+fn eval_error(input) {
+  let result =
+    input
+    |> lexer.lex()
+    |> parser.parse()
+
+  let assert Ok(program) = result
+  let assert Error(err) = evaluator.eval(program)
+  err
 }

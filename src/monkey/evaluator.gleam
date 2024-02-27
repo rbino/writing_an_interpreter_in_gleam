@@ -3,6 +3,11 @@ import gleam/result
 import monkey/ast
 import monkey/obj
 
+pub type Error {
+  ArithmeticError
+  Unsupported
+}
+
 pub fn eval(program: ast.Program) {
   list.fold_until(program, Ok(obj.Null), fn(_, statement) {
     case do_eval(statement) {
@@ -21,7 +26,11 @@ fn do_eval(node) {
       use rhs_obj <- result.map(do_eval(rhs))
       eval_bang(rhs_obj)
     }
-    _ -> Error(Nil)
+    ast.Minus(rhs) -> {
+      use rhs_obj <- result.try(do_eval(rhs))
+      eval_minus(rhs_obj)
+    }
+    _ -> Error(Unsupported)
   }
 }
 
@@ -29,5 +38,12 @@ fn eval_bang(rhs) {
   case rhs {
     obj.False | obj.Null -> obj.True
     _ -> obj.False
+  }
+}
+
+fn eval_minus(rhs) {
+  case rhs {
+    obj.Int(value) -> Ok(obj.Int(-value))
+    _ -> Error(ArithmeticError)
   }
 }

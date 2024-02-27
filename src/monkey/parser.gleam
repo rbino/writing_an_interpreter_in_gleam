@@ -273,7 +273,7 @@ fn advance(parser) {
 fn advance_n(parser, n) {
   case n {
     0 -> parser
-    n -> advance_n(parser, n - 1)
+    n -> advance_n(advance(parser), n - 1)
   }
 }
 

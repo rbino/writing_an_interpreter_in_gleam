@@ -1,6 +1,7 @@
 import gleeunit
 import gleeunit/should
 import gleam/list
+import monkey/env
 import monkey/evaluator
 import monkey/lexer
 import monkey/obj
@@ -197,7 +198,8 @@ fn eval(input) {
     |> parser.parse()
 
   let assert Ok(program) = result
-  let assert Ok(obj) = evaluator.eval(program)
+  let env = env.new()
+  let assert Ok(#(obj, _env)) = evaluator.eval(program, env)
   obj
 }
 
@@ -208,6 +210,7 @@ fn eval_error(input) {
     |> parser.parse()
 
   let assert Ok(program) = result
-  let assert Error(err) = evaluator.eval(program)
+  let env = env.new()
+  let assert Error(#(err, _env)) = evaluator.eval(program, env)
   err
 }

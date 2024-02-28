@@ -3,104 +3,111 @@ import gleam/result
 import monkey/ast
 import monkey/obj
 
-pub fn eval(program: ast.Program) {
-  list.fold_until(program, Ok(obj.Null), fn(_, statement) {
-    case do_eval(statement) {
-      Ok(obj.ReturnValue(obj)) -> list.Stop(Ok(obj))
-      Ok(_) as value -> list.Continue(value)
-      Error(_) as error -> list.Stop(error)
+pub fn eval(program: ast.Program, env) {
+  list.fold_until(program, Ok(#(obj.Null, env)), fn(acc, statement) {
+    let assert Ok(#(_, env)) = acc
+    case do_eval(statement, env) {
+      Ok(#(obj.ReturnValue(obj), env)) -> list.Stop(Ok(#(obj, env)))
+      Ok(_) as value_with_env -> list.Continue(value_with_env)
+      Error(_) as error_with_env -> list.Stop(error_with_env)
     }
   })
 }
 
-fn eval_statements(statements) {
-  list.fold_until(statements, Ok(obj.Null), fn(_, statement) {
-    case do_eval(statement) {
-      Ok(obj.ReturnValue(_)) as return -> list.Stop(return)
-      Ok(_) as value -> list.Continue(value)
-      Error(_) as error -> list.Stop(error)
+fn eval_statements(statements, env) {
+  list.fold_until(statements, Ok(#(obj.Null, env)), fn(acc, statement) {
+    let assert Ok(#(_, env)) = acc
+    case do_eval(statement, env) {
+      Ok(#(obj.ReturnValue(_), _)) as return -> list.Stop(return)
+      Ok(_) as value_with_env -> list.Continue(value_with_env)
+      Error(_) as error_with_env -> list.Stop(error_with_env)
     }
   })
 }
 
-fn do_eval(node) {
+fn do_eval(node, env) {
   case node {
-    ast.Int(value) -> Ok(obj.Int(value))
-    ast.True -> Ok(obj.True)
-    ast.False -> Ok(obj.False)
+    ast.Int(value) -> Ok(#(obj.Int(value), env))
+    ast.True -> Ok(#(obj.True, env))
+    ast.False -> Ok(#(obj.False, env))
     ast.UnaryOp(op: op, rhs: rhs) -> {
-      use rhs_obj <- result.try(do_eval(rhs))
+      use #(rhs_obj, env) <- result.try(do_eval(rhs, env))
       case op {
-        ast.BooleanNot -> eval_boolean_not(rhs_obj)
-        ast.Negate -> eval_negation(rhs_obj)
+        ast.BooleanNot -> eval_boolean_not(rhs_obj, env)
+        ast.Negate -> eval_negation(rhs_obj, env)
       }
     }
     ast.BinaryOp(lhs: lhs, op: op, rhs: rhs) -> {
-      use lhs_obj <- result.try(do_eval(lhs))
-      use rhs_obj <- result.try(do_eval(rhs))
-      eval_infix_expr(op, lhs_obj, rhs_obj)
+      use #(lhs_obj, env) <- result.try(do_eval(lhs, env))
+      use #(rhs_obj, env) <- result.try(do_eval(rhs, env))
+      eval_infix_expr(op, lhs_obj, rhs_obj, env)
     }
     ast.If(condition, consequence) -> {
-      use condition_obj <- result.try(do_eval(condition))
+      use #(condition_obj, env) <- result.try(do_eval(condition, env))
       case condition_obj {
-        obj.False | obj.Null -> Ok(obj.Null)
-        _ -> do_eval(consequence)
+        obj.False | obj.Null -> Ok(#(obj.Null, env))
+        _ -> do_eval(consequence, env)
       }
     }
     ast.IfElse(condition, consequence, alternative) -> {
-      use condition_obj <- result.try(do_eval(condition))
+      use #(condition_obj, env) <- result.try(do_eval(condition, env))
       case condition_obj {
-        obj.False | obj.Null -> do_eval(alternative)
-        _ -> do_eval(consequence)
+        obj.False | obj.Null -> do_eval(alternative, env)
+        _ -> do_eval(consequence, env)
       }
     }
-    ast.Block(statements) -> eval_statements(statements)
+    ast.Block(statements) -> eval_statements(statements, env)
     ast.Return(value) -> {
-      use obj <- result.map(do_eval(value))
-      obj.ReturnValue(obj)
+      use #(obj, env) <- result.map(do_eval(value, env))
+      #(obj.ReturnValue(obj), env)
     }
-    _ -> Error(obj.Error(obj.UnsupportedError))
+    _ -> Error(#(obj.Error(obj.UnsupportedError), env))
   }
 }
 
-fn eval_boolean_not(rhs) {
+fn eval_boolean_not(rhs, env) {
   case rhs {
-    obj.False | obj.Null -> Ok(obj.True)
-    _ -> Ok(obj.False)
+    obj.False | obj.Null -> Ok(#(obj.True, env))
+    _ -> Ok(#(obj.False, env))
   }
 }
 
-fn eval_negation(rhs) {
+fn eval_negation(rhs, env) {
   case rhs {
-    obj.Int(value) -> Ok(obj.Int(-value))
-    _ ->
-      unsupported_unary_op_error(ast.Negate, rhs)
-      |> Error()
+    obj.Int(value) -> Ok(#(obj.Int(-value), env))
+    _ -> {
+      let err = unsupported_unary_op_error(ast.Negate, rhs)
+      Error(#(err, env))
+    }
   }
 }
 
-fn eval_infix_expr(op, lhs, rhs) {
+fn eval_infix_expr(op, lhs, rhs, env) {
   case op, lhs, rhs {
-    _, obj.Int(lhs), obj.Int(rhs) -> eval_integer_infix_expr(op, lhs, rhs)
-    ast.Eq, lhs, rhs -> Ok(bool_obj(lhs == rhs))
-    ast.NotEq, lhs, rhs -> Ok(bool_obj(lhs != rhs))
+    _, obj.Int(lhs), obj.Int(rhs) -> {
+      let obj = eval_integer_infix_expr(op, lhs, rhs)
+      Ok(#(obj, env))
+    }
+    ast.Eq, lhs, rhs -> Ok(#(bool_obj(lhs == rhs), env))
+    ast.NotEq, lhs, rhs -> Ok(#(bool_obj(lhs != rhs), env))
 
-    _, _, _ ->
-      unsupported_binary_op_error(op, lhs, rhs)
-      |> Error()
+    _, _, _ -> {
+      let err = unsupported_binary_op_error(op, lhs, rhs)
+      Error(#(err, env))
+    }
   }
 }
 
 fn eval_integer_infix_expr(op, lhs, rhs) {
   case op {
-    ast.Add -> Ok(obj.Int(lhs + rhs))
-    ast.Sub -> Ok(obj.Int(lhs - rhs))
-    ast.Mul -> Ok(obj.Int(lhs * rhs))
-    ast.Div -> Ok(obj.Int(lhs / rhs))
-    ast.LT -> Ok(bool_obj(lhs < rhs))
-    ast.GT -> Ok(bool_obj(lhs > rhs))
-    ast.Eq -> Ok(bool_obj(lhs == rhs))
-    ast.NotEq -> Ok(bool_obj(lhs != rhs))
+    ast.Add -> obj.Int(lhs + rhs)
+    ast.Sub -> obj.Int(lhs - rhs)
+    ast.Mul -> obj.Int(lhs * rhs)
+    ast.Div -> obj.Int(lhs / rhs)
+    ast.LT -> bool_obj(lhs < rhs)
+    ast.GT -> bool_obj(lhs > rhs)
+    ast.Eq -> bool_obj(lhs == rhs)
+    ast.NotEq -> bool_obj(lhs != rhs)
   }
 }
 

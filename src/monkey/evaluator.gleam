@@ -55,10 +55,12 @@ fn eval_negation(rhs) {
 }
 
 fn eval_infix_expr(op, lhs, rhs) {
-  case lhs, rhs {
-    obj.Int(lhs), obj.Int(rhs) -> eval_integer_infix_expr(op, lhs, rhs)
+  case op, lhs, rhs {
+    _, obj.Int(lhs), obj.Int(rhs) -> eval_integer_infix_expr(op, lhs, rhs)
+    ast.Eq, lhs, rhs -> Ok(bool_obj(lhs == rhs))
+    ast.NotEq, lhs, rhs -> Ok(bool_obj(lhs != rhs))
 
-    _, _ ->
+    _, _, _ ->
       unsupported_binary_op_error(op, lhs, rhs)
       |> Error()
   }

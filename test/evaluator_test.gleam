@@ -114,6 +114,15 @@ pub fn eval_boolean_expression_test() {
     #("1 != 1", obj.False),
     #("1 == 2", obj.False),
     #("1 != 2", obj.True),
+    #("true == true", obj.True),
+    #("false == false", obj.True),
+    #("true == false", obj.False),
+    #("true != false", obj.True),
+    #("false != true ", obj.True),
+    #("(1 < 2) == true", obj.True),
+    #("(1 < 2) == false", obj.False),
+    #("(1 > 2) == true", obj.False),
+    #("(1 > 2) == false", obj.True),
   ]
   |> list.each(fn(under_test) {
     let #(input, expected) = under_test

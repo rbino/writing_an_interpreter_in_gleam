@@ -1,3 +1,4 @@
+import gleam/bool
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -29,6 +30,11 @@ fn do_eval(node) {
         ast.Negate -> eval_negation(rhs_obj)
       }
     }
+    ast.BinaryOp(lhs: lhs, op: op, rhs: rhs) -> {
+      use lhs_obj <- result.try(do_eval(lhs))
+      use rhs_obj <- result.try(do_eval(rhs))
+      eval_infix_expr(op, lhs_obj, rhs_obj)
+    }
     _ -> Error(Unsupported)
   }
 }
@@ -49,11 +55,54 @@ fn eval_negation(rhs) {
   }
 }
 
+fn eval_infix_expr(op, lhs, rhs) {
+  case op {
+    ast.Add | ast.Sub | ast.Mul | ast.Div ->
+      eval_integer_infix_expr(op, lhs, rhs)
+
+    _ -> Error(Unsupported)
+  }
+}
+
+fn eval_integer_infix_expr(op, lhs, rhs) {
+  let type_error = fn() {
+    unsupported_binary_op_error(op, lhs, rhs)
+    |> Error()
+  }
+
+  let operands = case lhs, rhs {
+    obj.Int(lhs), obj.Int(rhs) -> Ok(#(lhs, rhs))
+    _, _ -> Error(Nil)
+  }
+
+  use <- bool.lazy_guard(when: result.is_error(operands), return: type_error)
+  let assert Ok(#(lhs, rhs)) = operands
+  let result = case op {
+    ast.Add -> lhs + rhs
+    ast.Sub -> lhs - rhs
+    ast.Mul -> lhs * rhs
+    ast.Div -> lhs / rhs
+    _ -> panic
+  }
+  Ok(obj.Int(result))
+}
+
 fn unsupported_unary_op_error(op, rhs) {
   let msg =
     "'"
     <> ast.unary_op_to_string(op)
     <> "' not supported for type "
+    <> obj.object_type(rhs)
+  TypeError(msg)
+}
+
+fn unsupported_binary_op_error(op, lhs, rhs) {
+  let msg =
+    "'"
+    <> ast.binary_op_to_string(op)
+    <> "' not supported between "
+    <> obj.object_type(lhs)
+    <> " and "
     <> obj.object_type(rhs)
   TypeError(msg)
 }

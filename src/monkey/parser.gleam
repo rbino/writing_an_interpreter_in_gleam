@@ -120,8 +120,8 @@ fn parse_prefix(parser: Parser, token) {
     token.Int(value) -> Ok(#(ast.Int(value), parser))
     token.True -> Ok(#(ast.True, parser))
     token.False -> Ok(#(ast.False, parser))
-    token.Minus -> parse_prefix_expression(parser, ast.Minus)
-    token.Bang -> parse_prefix_expression(parser, ast.Bang)
+    token.Minus -> parse_unary_op(parser, ast.Negate)
+    token.Bang -> parse_unary_op(parser, ast.BooleanNot)
 
     token.LParen -> {
       use #(expr, parser) <- result.try(parse_expression(parser, prec_lowest))
@@ -139,9 +139,9 @@ fn parse_prefix(parser: Parser, token) {
   }
 }
 
-fn parse_prefix_expression(parser: Parser, op) {
+fn parse_unary_op(parser: Parser, op) {
   use #(rhs, parser) <- result.map(parse_expression(parser, prec_prefix))
-  #(op(rhs), parser)
+  #(ast.UnaryOp(op: op, rhs: rhs), parser)
 }
 
 fn parse_if_expression(parser: Parser) {
@@ -220,9 +220,9 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
         token.LT -> ast.LT
         token.GT -> ast.GT
         token.Plus -> ast.Add
-        token.Minus -> ast.Subtract
-        token.Asterisk -> ast.Multiply
-        token.Slash -> ast.Divide
+        token.Minus -> ast.Sub
+        token.Asterisk -> ast.Mul
+        token.Slash -> ast.Div
         // We can safely panic here: peek_precedence returns prec_lowest
         // for all tokens which are not valid infix tokens, so we should
         // never get past bool.guard in those cases
@@ -231,7 +231,7 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
 
       let parser = advance(parser)
       use #(rhs, parser) <- result.try(parse_expression(parser, next_prec))
-      let node = op(lhs, rhs)
+      let node = ast.BinaryOp(lhs: lhs, op: op, rhs: rhs)
       parse_infix(parser, node, base_prec)
     }
 

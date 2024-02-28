@@ -47,17 +47,17 @@ pub fn integer_expression_test() {
 }
 
 pub fn prefix_expression_test() {
-  expression_test("-10;", ast.Minus(rhs: ast.Int(10)))
-  expression_test("!foo", ast.Bang(rhs: ast.Ident("foo")))
-  expression_test("!true", ast.Bang(rhs: ast.True))
+  expression_test("-10;", ast.UnaryOp(ast.Negate, ast.Int(10)))
+  expression_test("!foo", ast.UnaryOp(ast.BooleanNot, ast.Ident("foo")))
+  expression_test("!true", ast.UnaryOp(ast.BooleanNot, ast.True))
 }
 
 pub fn infix_expression_test() {
   [
     #("+", ast.Add),
-    #("-", ast.Subtract),
-    #("*", ast.Multiply),
-    #("/", ast.Divide),
+    #("-", ast.Sub),
+    #("*", ast.Mul),
+    #("/", ast.Div),
     #(">", ast.GT),
     #("<", ast.LT),
     #("==", ast.Eq),
@@ -65,12 +65,12 @@ pub fn infix_expression_test() {
   ]
   |> list.each(fn(under_test) {
     let #(string_op, ast_op) = under_test
-    let expected = ast_op(ast.Int(5), ast.Int(10))
+    let expected = ast.BinaryOp(ast.Int(5), ast_op, ast.Int(10))
     expression_test("5 " <> string_op <> " 10;", expected)
   })
 
-  expression_test("true == true", ast.Eq(lhs: ast.True, rhs: ast.True))
-  expression_test("false != true", ast.NotEq(lhs: ast.False, rhs: ast.True))
+  expression_test("true == true", ast.BinaryOp(ast.True, ast.Eq, ast.True))
+  expression_test("false != true", ast.BinaryOp(ast.False, ast.NotEq, ast.True))
 }
 
 pub fn infix_expression_precedence_test() {
@@ -103,7 +103,7 @@ pub fn if_test() {
   let input = "if (x < y) { x }"
   let expected =
     ast.If(
-      condition: ast.LT(lhs: ast.Ident("x"), rhs: ast.Ident("y")),
+      condition: ast.BinaryOp(ast.Ident("x"), ast.LT, ast.Ident("y")),
       consequence: ast.Block([ast.Ident("x")]),
     )
   expression_test(input, expected)
@@ -111,7 +111,7 @@ pub fn if_test() {
   let input = "if (z == true) { x } else { y }"
   let expected =
     ast.IfElse(
-      condition: ast.Eq(lhs: ast.Ident("z"), rhs: ast.True),
+      condition: ast.BinaryOp(ast.Ident("z"), ast.Eq, ast.True),
       consequence: ast.Block([ast.Ident("x")]),
       alternative: ast.Block([ast.Ident("y")]),
     )
@@ -123,7 +123,7 @@ pub fn function_literal_test() {
   let expected =
     ast.Fn(
       parameters: ["a", "b"],
-      body: ast.Block([ast.Add(lhs: ast.Ident("a"), rhs: ast.Ident("b"))]),
+      body: ast.Block([ast.BinaryOp(ast.Ident("a"), ast.Add, ast.Ident("b"))]),
     )
   expression_test(input, expected)
 
@@ -131,7 +131,7 @@ pub fn function_literal_test() {
   let expected =
     ast.Fn(
       parameters: ["x"],
-      body: ast.Block([ast.Multiply(lhs: ast.Ident("x"), rhs: ast.Ident("y"))]),
+      body: ast.Block([ast.BinaryOp(ast.Ident("x"), ast.Mul, ast.Ident("y"))]),
     )
   expression_test(input, expected)
 
@@ -146,7 +146,7 @@ pub fn function_call_test() {
   let expected =
     ast.Call(function: ast.Ident("foo"), arguments: [
       ast.Ident("bar"),
-      ast.Add(lhs: ast.Int(42), rhs: ast.Ident("baz")),
+      ast.BinaryOp(ast.Int(42), ast.Add, ast.Ident("baz")),
     ])
   expression_test(input, expected)
 
@@ -156,7 +156,7 @@ pub fn function_call_test() {
       function: ast.Fn(
         parameters: ["x", "y"],
         body: ast.Block([
-          ast.Return(ast.Multiply(lhs: ast.Ident("x"), rhs: ast.Ident("y"))),
+          ast.Return(ast.BinaryOp(ast.Ident("x"), ast.Mul, ast.Ident("y"))),
         ]),
       ),
       arguments: [ast.Int(10), ast.Int(32)],

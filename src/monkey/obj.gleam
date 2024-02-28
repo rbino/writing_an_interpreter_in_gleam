@@ -18,8 +18,8 @@ pub fn inspect(obj) {
 
 pub fn object_type(obj) {
   case obj {
-    Int(_) -> "INTEGER"
-    True | False -> "BOOLEAN"
-    Null -> "NULL"
+    Int(_) -> "int"
+    True | False -> "bool"
+    Null -> "null"
   }
 }

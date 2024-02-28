@@ -4,7 +4,7 @@ import monkey/ast
 import monkey/obj
 
 pub type Error {
-  ArithmeticError
+  TypeError(msg: String)
   Unsupported
 }
 
@@ -43,6 +43,17 @@ fn eval_boolean_not(rhs) {
 fn eval_negation(rhs) {
   case rhs {
     obj.Int(value) -> Ok(obj.Int(-value))
-    _ -> Error(ArithmeticError)
+    _ ->
+      unsupported_unary_op_error(ast.Negate, rhs)
+      |> Error()
   }
+}
+
+fn unsupported_unary_op_error(op, rhs) {
+  let msg =
+    "'"
+    <> ast.unary_op_to_string(op)
+    <> "' not supported for type "
+    <> obj.object_type(rhs)
+  TypeError(msg)
 }

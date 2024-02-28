@@ -37,27 +37,27 @@ pub type Node {
   BinaryOp(lhs: Node, op: BinaryOperation, rhs: Node)
 }
 
+pub fn unary_op_to_string(op) {
+  case op {
+    BooleanNot -> "!"
+    Negate -> "-"
+  }
+}
+
+pub fn binary_op_to_string(op) {
+  case op {
+    Add -> "+"
+    Sub -> "-"
+    Mul -> "*"
+    Div -> "/"
+    Eq -> "=="
+    NotEq -> "!="
+    GT -> ">"
+    LT -> "<"
+  }
+}
+
 pub fn to_string(node) {
-  let unary_op_to_string = fn(op) {
-    case op {
-      BooleanNot -> "!"
-      Negate -> "-"
-    }
-  }
-
-  let binary_op_to_string = fn(op) {
-    case op {
-      Add -> "+"
-      Sub -> "-"
-      Mul -> "*"
-      Div -> "/"
-      Eq -> "=="
-      NotEq -> "!="
-      GT -> ">"
-      LT -> "<"
-    }
-  }
-
   case node {
     Block(statements) -> {
       let statements =

@@ -63,9 +63,9 @@ pub fn eval_minus_operator_test() {
 
   ["-true", "-false"]
   |> list.each(fn(input) {
-    input
-    |> eval_error()
-    |> should.equal(evaluator.ArithmeticError)
+    let assert evaluator.TypeError(_) =
+      input
+      |> eval_error()
   })
 }
 

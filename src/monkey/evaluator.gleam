@@ -11,6 +11,17 @@ pub type Error {
 pub fn eval(program: ast.Program) {
   list.fold_until(program, Ok(obj.Null), fn(_, statement) {
     case do_eval(statement) {
+      Ok(obj.ReturnValue(obj)) -> list.Stop(Ok(obj))
+      Ok(_) as value -> list.Continue(value)
+      Error(_) as error -> list.Stop(error)
+    }
+  })
+}
+
+fn eval_statements(statements) {
+  list.fold_until(statements, Ok(obj.Null), fn(_, statement) {
+    case do_eval(statement) {
+      Ok(obj.ReturnValue(_)) as return -> list.Stop(return)
       Ok(_) as value -> list.Continue(value)
       Error(_) as error -> list.Stop(error)
     }
@@ -33,6 +44,25 @@ fn do_eval(node) {
       use lhs_obj <- result.try(do_eval(lhs))
       use rhs_obj <- result.try(do_eval(rhs))
       eval_infix_expr(op, lhs_obj, rhs_obj)
+    }
+    ast.If(condition, consequence) -> {
+      use condition_obj <- result.try(do_eval(condition))
+      case condition_obj {
+        obj.False | obj.Null -> Ok(obj.Null)
+        _ -> do_eval(consequence)
+      }
+    }
+    ast.IfElse(condition, consequence, alternative) -> {
+      use condition_obj <- result.try(do_eval(condition))
+      case condition_obj {
+        obj.False | obj.Null -> do_eval(alternative)
+        _ -> do_eval(consequence)
+      }
+    }
+    ast.Block(statements) -> eval_statements(statements)
+    ast.Return(value) -> {
+      use obj <- result.map(do_eval(value))
+      obj.ReturnValue(obj)
     }
     _ -> Error(Unsupported)
   }

@@ -5,6 +5,7 @@ pub type Object {
   True
   False
   Null
+  ReturnValue(Object)
 }
 
 pub fn inspect(obj) {
@@ -13,6 +14,7 @@ pub fn inspect(obj) {
     True -> "true"
     False -> "false"
     Null -> "null"
+    ReturnValue(obj) -> inspect(obj)
   }
 }
 
@@ -21,5 +23,6 @@ pub fn object_type(obj) {
     Int(_) -> "int"
     True | False -> "bool"
     Null -> "null"
+    ReturnValue(_) -> "return_value"
   }
 }

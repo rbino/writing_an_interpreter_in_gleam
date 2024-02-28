@@ -140,6 +140,56 @@ pub fn eval_boolean_expression_test() {
   })
 }
 
+pub fn eval_if_else_expression_test() {
+  [
+    #("if (true) { 10 }", obj.Int(10)),
+    #("if (false) { 10 }", obj.Null),
+    #("if (1) { 10 }", obj.Int(10)),
+    #("if (1 < 2) { 10 }", obj.Int(10)),
+    #("if (1 > 2) { 10 }", obj.Null),
+    #("if (1 > 2) { 10 } else { 20 }", obj.Int(20)),
+    #("if (1 < 2) { 10 } else { 20 }", obj.Int(10)),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+}
+
+pub fn eval_return_test() {
+  [
+    #("return 10;", obj.Int(10)),
+    #("return 10; 9;", obj.Int(10)),
+    #("return 2 * 5; 9;", obj.Int(10)),
+    #("9; return 2 * 5; 9;", obj.Int(10)),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+
+  let input =
+    "
+  if (10 > 1) {
+    if (10 > 1) {
+      return 10;
+    }
+
+    return 1;
+  }
+  "
+
+  input
+  |> eval()
+  |> should.equal(obj.Int(10))
+}
+
 fn eval(input) {
   let result =
     input

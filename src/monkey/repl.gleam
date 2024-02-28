@@ -2,7 +2,6 @@ import gleam/erlang
 import gleam/io
 import gleam/list
 import gleam/result
-import gleam/string
 import monkey/evaluator
 import monkey/lexer
 import monkey/obj
@@ -22,8 +21,7 @@ fn loop() {
       Ok(program) ->
         case evaluator.eval(program) {
           Ok(obj) -> io.println(obj.inspect(obj))
-          Error(e) ->
-            io.println("Error during evaluation: " <> string.inspect(e))
+          Error(e) -> io.println(obj.inspect(e))
         }
 
       Error(errors) -> {

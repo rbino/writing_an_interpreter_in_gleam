@@ -63,7 +63,7 @@ pub fn eval_minus_operator_test() {
 
   ["-true", "-false"]
   |> list.each(fn(input) {
-    let assert evaluator.TypeError(_) =
+    let assert obj.Error(obj.TypeError(_)) =
       input
       |> eval_error()
   })
@@ -96,7 +96,7 @@ pub fn eval_integer_expression_test() {
 
   ["5 + true", "!4 - 5", "true * false"]
   |> list.each(fn(input) {
-    let assert evaluator.TypeError(_) =
+    let assert obj.Error(obj.TypeError(_)) =
       input
       |> eval_error()
   })
@@ -134,7 +134,7 @@ pub fn eval_boolean_expression_test() {
 
   ["true < 5", "false > 42", "true < false"]
   |> list.each(fn(input) {
-    let assert evaluator.TypeError(_) =
+    let assert obj.Error(obj.TypeError(_)) =
       input
       |> eval_error()
   })

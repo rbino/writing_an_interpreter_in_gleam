@@ -3,11 +3,6 @@ import gleam/result
 import monkey/ast
 import monkey/obj
 
-pub type Error {
-  TypeError(msg: String)
-  Unsupported
-}
-
 pub fn eval(program: ast.Program) {
   list.fold_until(program, Ok(obj.Null), fn(_, statement) {
     case do_eval(statement) {
@@ -64,7 +59,7 @@ fn do_eval(node) {
       use obj <- result.map(do_eval(value))
       obj.ReturnValue(obj)
     }
-    _ -> Error(Unsupported)
+    _ -> Error(obj.Error(obj.UnsupportedError))
   }
 }
 
@@ -122,7 +117,8 @@ fn unsupported_unary_op_error(op, rhs) {
     <> ast.unary_op_to_string(op)
     <> "' not supported for type "
     <> obj.object_type(rhs)
-  TypeError(msg)
+  obj.TypeError(msg)
+  |> obj.Error()
 }
 
 fn unsupported_binary_op_error(op, lhs, rhs) {
@@ -133,5 +129,6 @@ fn unsupported_binary_op_error(op, lhs, rhs) {
     <> obj.object_type(lhs)
     <> " and "
     <> obj.object_type(rhs)
-  TypeError(msg)
+  obj.TypeError(msg)
+  |> obj.Error()
 }

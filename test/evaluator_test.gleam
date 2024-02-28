@@ -102,6 +102,35 @@ pub fn eval_integer_expression_test() {
   })
 }
 
+pub fn eval_boolean_expression_test() {
+  [
+    #("true", obj.True),
+    #("false", obj.False),
+    #("1 < 2", obj.True),
+    #("1 > 2", obj.False),
+    #("1 < 1", obj.False),
+    #("1 > 1", obj.False),
+    #("1 == 1", obj.True),
+    #("1 != 1", obj.False),
+    #("1 == 2", obj.False),
+    #("1 != 2", obj.True),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+
+  ["true < 5", "false > 42", "true < false"]
+  |> list.each(fn(input) {
+    let assert evaluator.TypeError(_) =
+      input
+      |> eval_error()
+  })
+}
+
 fn eval(input) {
   let result =
     input

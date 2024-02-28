@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -56,35 +55,33 @@ fn eval_negation(rhs) {
 }
 
 fn eval_infix_expr(op, lhs, rhs) {
-  case op {
-    ast.Add | ast.Sub | ast.Mul | ast.Div ->
-      eval_integer_infix_expr(op, lhs, rhs)
+  case lhs, rhs {
+    obj.Int(lhs), obj.Int(rhs) -> eval_integer_infix_expr(op, lhs, rhs)
 
-    _ -> Error(Unsupported)
+    _, _ ->
+      unsupported_binary_op_error(op, lhs, rhs)
+      |> Error()
   }
 }
 
 fn eval_integer_infix_expr(op, lhs, rhs) {
-  let type_error = fn() {
-    unsupported_binary_op_error(op, lhs, rhs)
-    |> Error()
+  case op {
+    ast.Add -> Ok(obj.Int(lhs + rhs))
+    ast.Sub -> Ok(obj.Int(lhs - rhs))
+    ast.Mul -> Ok(obj.Int(lhs * rhs))
+    ast.Div -> Ok(obj.Int(lhs / rhs))
+    ast.LT -> Ok(bool_obj(lhs < rhs))
+    ast.GT -> Ok(bool_obj(lhs > rhs))
+    ast.Eq -> Ok(bool_obj(lhs == rhs))
+    ast.NotEq -> Ok(bool_obj(lhs != rhs))
   }
+}
 
-  let operands = case lhs, rhs {
-    obj.Int(lhs), obj.Int(rhs) -> Ok(#(lhs, rhs))
-    _, _ -> Error(Nil)
+fn bool_obj(bool) {
+  case bool {
+    True -> obj.True
+    False -> obj.False
   }
-
-  use <- bool.lazy_guard(when: result.is_error(operands), return: type_error)
-  let assert Ok(#(lhs, rhs)) = operands
-  let result = case op {
-    ast.Add -> lhs + rhs
-    ast.Sub -> lhs - rhs
-    ast.Mul -> lhs * rhs
-    ast.Div -> lhs / rhs
-    _ -> panic
-  }
-  Ok(obj.Int(result))
 }
 
 fn unsupported_unary_op_error(op, rhs) {

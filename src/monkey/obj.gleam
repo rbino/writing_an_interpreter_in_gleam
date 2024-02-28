@@ -2,6 +2,7 @@ import gleam/int
 
 pub type Error {
   TypeError(msg: String)
+  UnknownIdentifierError(msg: String)
   UnsupportedError
 }
 
@@ -24,6 +25,7 @@ pub fn inspect(obj) {
     Error(err_type) ->
       case err_type {
         TypeError(msg) -> "TypeError: " <> msg
+        UnknownIdentifierError(msg) -> "UnknownIdentifierError: " <> msg
         UnsupportedError -> "UnsupportedError"
       }
   }

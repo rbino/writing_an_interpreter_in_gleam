@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/result
 import monkey/ast
+import monkey/env
 import monkey/obj
 
 pub fn eval(program: ast.Program, env) {
@@ -27,6 +28,14 @@ fn eval_statements(statements, env) {
 
 fn do_eval(node, env) {
   case node {
+    ast.Ident(name) ->
+      case env.get(env, name) {
+        Ok(value) -> Ok(#(value, env))
+        Error(Nil) -> {
+          let err = unknown_identifier_error(name)
+          Error(#(err, env))
+        }
+      }
     ast.Int(value) -> Ok(#(obj.Int(value), env))
     ast.True -> Ok(#(obj.True, env))
     ast.False -> Ok(#(obj.False, env))
@@ -60,6 +69,11 @@ fn do_eval(node, env) {
     ast.Return(value) -> {
       use #(obj, env) <- result.map(do_eval(value, env))
       #(obj.ReturnValue(obj), env)
+    }
+    ast.Let(name, value) -> {
+      use #(obj, env) <- result.map(do_eval(value, env))
+      let env = env.set(env, name, obj)
+      #(obj, env)
     }
     _ -> Error(#(obj.Error(obj.UnsupportedError), env))
   }
@@ -137,5 +151,11 @@ fn unsupported_binary_op_error(op, lhs, rhs) {
     <> " and "
     <> obj.object_type(rhs)
   obj.TypeError(msg)
+  |> obj.Error()
+}
+
+fn unknown_identifier_error(name) {
+  let msg = "unknown identifier '" <> name <> "'"
+  obj.UnknownIdentifierError(msg)
   |> obj.Error()
 }

@@ -191,6 +191,26 @@ pub fn eval_return_test() {
   |> should.equal(obj.Int(10))
 }
 
+pub fn eval_let_test() {
+  [
+    #("let a = 5; a;", obj.Int(5)),
+    #("let a = 5 * 5; a;", obj.Int(25)),
+    #("let a = 5; let b = a; b;", obj.Int(5)),
+    #("let a = 5; let b = a; let c = a + b + 5; c;", obj.Int(15)),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+
+  let assert obj.Error(obj.UnknownIdentifierError(_)) =
+    "foobar"
+    |> eval_error()
+}
+
 fn eval(input) {
   let result =
     input

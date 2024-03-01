@@ -64,7 +64,11 @@ fn do_eval(node, env) {
         _ -> do_eval(consequence, env)
       }
     }
-    ast.Block(statements) -> eval_statements(statements, env)
+    ast.Block(statements) ->
+      case eval_statements(statements, env) {
+        Ok(#(obj, _block_env)) -> Ok(#(obj, env))
+        Error(#(err, _block_env)) -> Error(#(err, env))
+      }
     ast.Return(value) -> {
       use #(obj, env) <- result.map(do_eval(value, env))
       #(obj.ReturnValue(obj), env)

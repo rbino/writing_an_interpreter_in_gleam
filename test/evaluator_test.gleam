@@ -197,6 +197,7 @@ pub fn eval_let_test() {
     #("let a = 5 * 5; a;", obj.Int(25)),
     #("let a = 5; let b = a; b;", obj.Int(5)),
     #("let a = 5; let b = a; let c = a + b + 5; c;", obj.Int(15)),
+    #("let a = 5; if (true) { let a = 7; } a;", obj.Int(5)),
   ]
   |> list.each(fn(under_test) {
     let #(input, expected) = under_test

@@ -1,6 +1,7 @@
 import gleeunit
 import gleeunit/should
 import gleam/list
+import monkey/ast
 import monkey/evaluator
 import monkey/lexer
 import monkey/obj
@@ -208,6 +209,19 @@ pub fn eval_let_test() {
   let assert obj.Error(obj.UnknownIdentifierError(_)) =
     "foobar"
     |> eval_error()
+}
+
+pub fn function_literal_test() {
+  let input = "fn(x) { x + 2; }"
+  let assert obj.Fn(params, body, _env) = eval(input)
+
+  params
+  |> should.equal(["x"])
+
+  body
+  |> should.equal(
+    ast.Block([ast.BinaryOp(ast.Ident("x"), ast.Add, ast.Int(2))]),
+  )
 }
 
 fn eval(input) {

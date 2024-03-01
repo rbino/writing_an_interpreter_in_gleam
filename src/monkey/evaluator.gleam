@@ -74,6 +74,7 @@ fn do_eval(node, env) {
       let env = obj.set_env(env, name, obj)
       #(obj, env)
     }
+    ast.Fn(params, body) -> Ok(#(obj.Fn(params, body, env), env))
     _ -> Error(#(obj.Error(obj.UnsupportedError), env))
   }
 }

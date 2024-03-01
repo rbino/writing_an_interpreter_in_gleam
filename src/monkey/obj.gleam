@@ -1,5 +1,7 @@
 import gleam/dict
 import gleam/int
+import gleam/string
+import monkey/ast
 
 pub type Error {
   TypeError(msg: String)
@@ -16,6 +18,7 @@ pub type Object {
   True
   False
   Null
+  Fn(params: List(String), body: ast.Node, env: Env)
   ReturnValue(Object)
   Error(Error)
 }
@@ -26,6 +29,8 @@ pub fn inspect(obj) {
     True -> "true"
     False -> "false"
     Null -> "null"
+    Fn(params, body, _env) ->
+      "fn(" <> string.join(params, ", ") <> ") " <> ast.to_string(body)
     ReturnValue(obj) -> inspect(obj)
     Error(err_type) ->
       case err_type {
@@ -41,6 +46,7 @@ pub fn object_type(obj) {
     Int(_) -> "int"
     True | False -> "bool"
     Null -> "null"
+    Fn(_, _, _) -> "function"
     ReturnValue(_) -> "return_value"
     Error(_) -> "error"
   }

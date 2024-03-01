@@ -225,6 +225,52 @@ pub fn function_literal_test() {
   )
 }
 
+pub fn function_application_test() {
+  [
+    #("let identity = fn(x) { x; }; identity(5);", obj.Int(5)),
+    #("let identity = fn(x) { return x; }; identity(5);", obj.Int(5)),
+    #("let double = fn(x) { x * 2; }; double(5);", obj.Int(10)),
+    #("let add = fn(x, y) { x + y; }; add(5, 5);", obj.Int(10)),
+    #("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", obj.Int(20)),
+    #("fn(x) { x; }(5)", obj.Int(5)),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+
+  let assert obj.Error(obj.BadFunctionError(_)) =
+    "let x = 1; x(3)"
+    |> eval_error()
+
+  let assert obj.Error(obj.BadArityError(_)) =
+    "let f = fn(x) { x }; f()"
+    |> eval_error()
+
+  let assert obj.Error(obj.BadArityError(_)) =
+    "let f = fn(x, y) { x + y }; f(1, 2, 3)"
+    |> eval_error()
+}
+
+pub fn closures_test() {
+  let input =
+    "
+  let newAdder = fn(x) {
+    fn(y) { x + y };
+  };
+  
+  let addTwo = newAdder(2);
+  addTwo(2);   
+  "
+
+  input
+  |> eval()
+  |> should.equal(obj.Int(4))
+}
+
 fn eval(input) {
   let result =
     input

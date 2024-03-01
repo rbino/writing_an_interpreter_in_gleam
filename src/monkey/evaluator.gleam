@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -79,7 +80,11 @@ fn do_eval(node, env) {
       #(obj, env)
     }
     ast.Fn(params, body) -> Ok(#(obj.Fn(params, body, env), env))
-    _ -> Error(#(obj.Error(obj.UnsupportedError), env))
+    ast.Call(fun, args) -> {
+      use #(fun_obj, env) <- result.try(do_eval(fun, env))
+      use #(arg_values, env) <- result.try(eval_expressions(args, env))
+      eval_function_call(fun_obj, arg_values, env)
+    }
   }
 }
 
@@ -129,6 +134,45 @@ fn eval_integer_infix_expr(op, lhs, rhs) {
   }
 }
 
+fn eval_expressions(exprs, env) {
+  let res =
+    list.fold_until(exprs, Ok(#([], env)), fn(acc, expr) {
+      let assert Ok(#(values, env)) = acc
+      case do_eval(expr, env) {
+        Ok(#(value, env)) -> list.Continue(Ok(#([value, ..values], env)))
+        Error(#(err, env)) -> list.Stop(Error(#(err, env)))
+      }
+    })
+
+  use #(values, env) <- result.map(res)
+  #(list.reverse(values), env)
+}
+
+fn eval_function_call(fun, args, outer_env) {
+  use #(params, body, stored_env) <- result.try(extract_fn(fun, outer_env))
+  case list.strict_zip(params, args) {
+    Error(list.LengthMismatch) ->
+      Error(#(bad_arity_error(params, args), outer_env))
+    Ok(params_with_args) -> {
+      let fun_env =
+        list.fold(params_with_args, stored_env, fn(env, param_and_arg) {
+          let #(param, arg) = param_and_arg
+          obj.set_env(env, param, arg)
+        })
+
+      use #(return_value, _env) <- result.map(do_eval(body, fun_env))
+      #(return_value, outer_env)
+    }
+  }
+}
+
+fn extract_fn(fun, env) {
+  case fun {
+    obj.Fn(params, body, env) -> Ok(#(params, body, env))
+    _ -> Error(#(bad_function_error(fun), env))
+  }
+}
+
 fn bool_obj(bool) {
   case bool {
     True -> obj.True
@@ -161,5 +205,31 @@ fn unsupported_binary_op_error(op, lhs, rhs) {
 fn unknown_identifier_error(name) {
   let msg = "unknown identifier '" <> name <> "'"
   obj.UnknownIdentifierError(msg)
+  |> obj.Error()
+}
+
+fn bad_function_error(fun) {
+  let msg = "expected a function, got: " <> obj.inspect(fun)
+  obj.BadFunctionError(msg)
+  |> obj.Error()
+}
+
+fn bad_arity_error(params, args) {
+  let expected_arg_count = list.length(params)
+  let actual_arg_count = list.length(args)
+  let subj = case expected_arg_count {
+    1 -> "argument"
+    _ -> "arguments"
+  }
+
+  let msg =
+    "expected "
+    <> int.to_string(expected_arg_count)
+    <> " "
+    <> subj
+    <> ", got "
+    <> int.to_string(actual_arg_count)
+
+  obj.BadArityError(msg)
   |> obj.Error()
 }

@@ -4,9 +4,10 @@ import gleam/string
 import monkey/ast
 
 pub type Error {
+  BadArityError(msg: String)
+  BadFunctionError(msg: String)
   TypeError(msg: String)
   UnknownIdentifierError(msg: String)
-  UnsupportedError
 }
 
 pub type Env {
@@ -34,9 +35,10 @@ pub fn inspect(obj) {
     ReturnValue(obj) -> inspect(obj)
     Error(err_type) ->
       case err_type {
+        BadArityError(msg) -> "BadArityError: " <> msg
+        BadFunctionError(msg) -> "BadFunctionError: " <> msg
         TypeError(msg) -> "TypeError: " <> msg
         UnknownIdentifierError(msg) -> "UnknownIdentifierError: " <> msg
-        UnsupportedError -> "UnsupportedError"
       }
   }
 }

@@ -3,6 +3,7 @@ import gleam/bool
 import gleam/list
 import gleam/int
 import gleam/string
+import gleam/string_builder
 import monkey/token
 
 pub opaque type Lexer {
@@ -62,6 +63,7 @@ fn do_lex(tokens, remaining) {
     ["/", ..rest] -> do_lex([token.Slash, ..tokens], rest)
     ["<", ..rest] -> do_lex([token.LT, ..tokens], rest)
     [">", ..rest] -> do_lex([token.GT, ..tokens], rest)
+    ["\"", ..rest] -> lex_string(rest, string_builder.new(), tokens)
     [" ", ..rest] | ["\n", ..rest] | ["\r", ..rest] | ["\t", ..rest] ->
       do_lex(tokens, rest)
     [c, ..rest] -> {
@@ -75,6 +77,19 @@ fn do_lex(tokens, remaining) {
     }
 
     [] -> list.reverse(tokens)
+  }
+}
+
+fn lex_string(remaining, builder, tokens) {
+  case remaining {
+    ["\"", ..rest] ->
+      do_lex([token.String(string_builder.to_string(builder)), ..tokens], rest)
+
+    [] ->
+      [token.Illegal(string_builder.to_string(builder)), ..tokens]
+      |> list.reverse()
+
+    [c, ..rest] -> lex_string(rest, string_builder.append(builder, c), tokens)
   }
 }
 

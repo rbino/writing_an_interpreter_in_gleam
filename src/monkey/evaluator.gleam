@@ -37,6 +37,7 @@ fn do_eval(node, env) {
         }
       }
     ast.Int(value) -> Ok(#(obj.Int(value), env))
+    ast.String(value) -> Ok(#(obj.String(value), env))
     ast.True -> Ok(#(obj.True, env))
     ast.False -> Ok(#(obj.False, env))
     ast.UnaryOp(op: op, rhs: rhs) -> {
@@ -111,6 +112,10 @@ fn eval_infix_expr(op, lhs, rhs, env) {
       let obj = eval_integer_infix_expr(op, lhs, rhs)
       Ok(#(obj, env))
     }
+
+    ast.Add, obj.String(lhs), obj.String(rhs) ->
+      Ok(#(obj.String(lhs <> rhs), env))
+
     ast.Eq, lhs, rhs -> Ok(#(bool_obj(lhs == rhs), env))
     ast.NotEq, lhs, rhs -> Ok(#(bool_obj(lhs != rhs), env))
 

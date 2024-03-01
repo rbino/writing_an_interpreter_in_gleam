@@ -16,6 +16,7 @@ pub type Env {
 
 pub type Object {
   Int(Int)
+  String(String)
   True
   False
   Null
@@ -27,6 +28,7 @@ pub type Object {
 pub fn inspect(obj) {
   case obj {
     Int(value) -> int.to_string(value)
+    String(value) -> "\"" <> value <> "\""
     True -> "true"
     False -> "false"
     Null -> "null"
@@ -46,6 +48,7 @@ pub fn inspect(obj) {
 pub fn object_type(obj) {
   case obj {
     Int(_) -> "int"
+    String(_) -> "string"
     True | False -> "bool"
     Null -> "null"
     Fn(_, _, _) -> "function"

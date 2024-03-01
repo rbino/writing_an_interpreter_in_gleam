@@ -23,6 +23,16 @@ pub fn eval_integer_test() {
   })
 }
 
+pub fn string_test() {
+  "\"Hello, world!\""
+  |> eval()
+  |> should.equal(obj.String("Hello, world!"))
+
+  "\"Hello,\" + \" \" + \"world!\""
+  |> eval()
+  |> should.equal(obj.String("Hello, world!"))
+}
+
 pub fn eval_boolean_test() {
   [#("true", obj.True), #("false", obj.False)]
   |> list.each(fn(under_test) {

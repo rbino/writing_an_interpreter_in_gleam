@@ -30,6 +30,9 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
+
+\"foobar\"
+\"foo bar\"
 "
 
   let expected_tokens = [
@@ -106,6 +109,8 @@ if (5 < 10) {
     token.NotEq,
     token.Int(9),
     token.Semicolon,
+    token.String("foobar"),
+    token.String("foo bar"),
   ]
 
   let tokens = lexer.lex(input)

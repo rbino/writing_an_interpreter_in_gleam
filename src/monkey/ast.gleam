@@ -31,6 +31,7 @@ pub type Node {
   IfElse(condition: Node, consequence: Node, alternative: Node)
   Ident(ident: String)
   Int(value: Int)
+  String(value: String)
   True
   False
   UnaryOp(op: UnaryOperation, rhs: Node)
@@ -89,6 +90,7 @@ pub fn to_string(node) {
       <> to_string(alternative)
     Ident(value) -> value
     Int(value) -> int.to_string(value)
+    String(value) -> "\"" <> value <> "\""
     True -> "true"
     False -> "false"
     UnaryOp(op: op, rhs: rhs) ->

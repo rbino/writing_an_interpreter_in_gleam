@@ -46,6 +46,10 @@ pub fn integer_expression_test() {
   expression_test("5;", ast.Int(5))
 }
 
+pub fn string_expression_test() {
+  expression_test("\"foobar\";", ast.String("foobar"))
+}
+
 pub fn prefix_expression_test() {
   expression_test("-10;", ast.UnaryOp(ast.Negate, ast.Int(10)))
   expression_test("!foo", ast.UnaryOp(ast.BooleanNot, ast.Ident("foo")))

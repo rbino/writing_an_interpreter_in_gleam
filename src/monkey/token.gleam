@@ -6,6 +6,7 @@ pub type Token {
   // Identifiers + literals
   Ident(value: String)
   Int(value: Int)
+  String(value: String)
 
   // Operators
   Assign
@@ -43,6 +44,7 @@ pub fn to_string(token) {
   case token {
     Ident(value) | Illegal(value) -> value
     Int(value) -> int.to_string(value)
+    String(value) -> "\"" <> value <> "\""
     Assign -> "="
     Plus -> "+"
     Minus -> "-"

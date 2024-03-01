@@ -118,6 +118,7 @@ fn parse_prefix(parser: Parser, token) {
   case token {
     token.Ident(value) -> Ok(#(ast.Ident(value), parser))
     token.Int(value) -> Ok(#(ast.Int(value), parser))
+    token.String(value) -> Ok(#(ast.String(value), parser))
     token.True -> Ok(#(ast.True, parser))
     token.False -> Ok(#(ast.False, parser))
     token.Minus -> parse_unary_op(parser, ast.Negate)

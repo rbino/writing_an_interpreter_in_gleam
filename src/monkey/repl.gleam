@@ -2,7 +2,6 @@ import gleam/erlang
 import gleam/io
 import gleam/list
 import gleam/result
-import monkey/env
 import monkey/evaluator
 import monkey/lexer
 import monkey/obj
@@ -11,7 +10,7 @@ import monkey/parser
 const prompt = ">> "
 
 pub fn start() {
-  env.new()
+  obj.new_env()
   |> loop()
 }
 

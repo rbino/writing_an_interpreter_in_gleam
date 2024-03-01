@@ -1,7 +1,6 @@
 import gleam/list
 import gleam/result
 import monkey/ast
-import monkey/env
 import monkey/obj
 
 pub fn eval(program: ast.Program, env) {
@@ -29,7 +28,7 @@ fn eval_statements(statements, env) {
 fn do_eval(node, env) {
   case node {
     ast.Ident(name) ->
-      case env.get(env, name) {
+      case obj.get_env(env, name) {
         Ok(value) -> Ok(#(value, env))
         Error(Nil) -> {
           let err = unknown_identifier_error(name)
@@ -72,7 +71,7 @@ fn do_eval(node, env) {
     }
     ast.Let(name, value) -> {
       use #(obj, env) <- result.map(do_eval(value, env))
-      let env = env.set(env, name, obj)
+      let env = obj.set_env(env, name, obj)
       #(obj, env)
     }
     _ -> Error(#(obj.Error(obj.UnsupportedError), env))

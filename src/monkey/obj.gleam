@@ -1,9 +1,14 @@
+import gleam/dict
 import gleam/int
 
 pub type Error {
   TypeError(msg: String)
   UnknownIdentifierError(msg: String)
   UnsupportedError
+}
+
+pub type Env {
+  Env(store: dict.Dict(String, Object))
 }
 
 pub type Object {
@@ -39,4 +44,16 @@ pub fn object_type(obj) {
     ReturnValue(_) -> "return_value"
     Error(_) -> "error"
   }
+}
+
+pub fn new_env() {
+  Env(store: dict.new())
+}
+
+pub fn get_env(env: Env, name) {
+  dict.get(env.store, name)
+}
+
+pub fn set_env(env: Env, name, value) {
+  Env(store: dict.insert(env.store, name, value))
 }

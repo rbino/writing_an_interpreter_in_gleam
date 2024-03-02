@@ -281,6 +281,29 @@ pub fn closures_test() {
   |> should.equal(obj.Int(4))
 }
 
+pub fn builtin_test() {
+  [
+    #("len(\"\")", obj.Int(0)),
+    #("len(\"four\")", obj.Int(4)),
+    #("len(\"hello world\")", obj.Int(11)),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+
+  let assert obj.Error(obj.TypeError(_)) =
+    "len(1)"
+    |> eval_error()
+
+  let assert obj.Error(obj.BadArityError(_)) =
+    "len(\"one\", \"two\")"
+    |> eval_error()
+}
+
 fn eval(input) {
   let result =
     input

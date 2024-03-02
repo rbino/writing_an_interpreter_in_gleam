@@ -23,6 +23,7 @@ pub type Object {
   Null
   Fn(params: List(String), body: ast.Node, env: Env)
   ReturnValue(Object)
+  Builtin(fun: fn(List(Object)) -> Result(Object, Object))
   Error(Error)
 }
 
@@ -36,6 +37,7 @@ pub fn inspect(obj) {
     Fn(params, body, _env) ->
       "fn(" <> string.join(params, ", ") <> ") " <> ast.to_string(body)
     ReturnValue(obj) -> inspect(obj)
+    Builtin(_) -> "builtin function"
     Error(err_type) ->
       case err_type {
         BadArityError(msg) -> "BadArityError: " <> msg
@@ -54,6 +56,7 @@ pub fn object_type(obj) {
     Null -> "null"
     Fn(_, _, _) -> "function"
     ReturnValue(_) -> "return_value"
+    Builtin(_) -> "builtin"
     Error(_) -> "error"
   }
 }
@@ -104,21 +107,19 @@ pub fn bad_function_error(fun) {
   |> Error()
 }
 
-pub fn bad_arity_error(params, args) {
-  let expected_arg_count = list.length(params)
-  let actual_arg_count = list.length(args)
-  let subj = case expected_arg_count {
+pub fn bad_arity_error(expected, actual) {
+  let subj = case expected {
     1 -> "argument"
     _ -> "arguments"
   }
 
   let msg =
     "expected "
-    <> int.to_string(expected_arg_count)
+    <> int.to_string(expected)
     <> " "
     <> subj
     <> ", got "
-    <> int.to_string(actual_arg_count)
+    <> int.to_string(actual)
 
   BadArityError(msg)
   |> Error()

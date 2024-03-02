@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/result
 import monkey/ast
+import monkey/builtin
 import monkey/obj
 
 pub fn eval(program: ast.Program, env) {
@@ -27,14 +28,7 @@ fn eval_statements(statements, env) {
 
 fn do_eval(node, env) {
   case node {
-    ast.Ident(name) ->
-      case obj.get_env(env, name) {
-        Ok(value) -> Ok(#(value, env))
-        Error(Nil) -> {
-          let err = unknown_identifier_error(name)
-          Error(#(err, env))
-        }
-      }
+    ast.Ident(name) -> eval_identifier(name, env)
     ast.Int(value) -> Ok(#(obj.Int(value), env))
     ast.String(value) -> Ok(#(obj.String(value), env))
     ast.True -> Ok(#(obj.True, env))
@@ -84,6 +78,21 @@ fn do_eval(node, env) {
       use #(fun_obj, env) <- result.try(do_eval(fun, env))
       use #(arg_values, env) <- result.try(eval_expressions(args, env))
       eval_function_call(fun_obj, arg_values, env)
+    }
+  }
+}
+
+fn eval_identifier(name, env) {
+  let result =
+    obj.get_env(env, name)
+    |> result.lazy_or(fn() { builtin.get(name) })
+
+  case result {
+    Ok(value) -> Ok(#(value, env))
+
+    Error(Nil) -> {
+      let err = obj.unknown_identifier_error(name)
+      Error(#(err, env))
     }
   }
 }
@@ -153,27 +162,33 @@ fn eval_expressions(exprs, env) {
 }
 
 fn eval_function_call(fun, args, outer_env) {
-  use #(params, body, stored_env) <- result.try(extract_fn(fun, outer_env))
-  case list.strict_zip(params, args) {
-    Error(list.LengthMismatch) ->
-      Error(#(obj.bad_arity_error(params, args), outer_env))
-    Ok(params_with_args) -> {
-      let fun_env =
-        list.fold(params_with_args, stored_env, fn(env, param_and_arg) {
-          let #(param, arg) = param_and_arg
-          obj.set_env(env, param, arg)
-        })
-
-      use #(return_value, _env) <- result.map(do_eval(body, fun_env))
-      #(return_value, outer_env)
-    }
-  }
-}
-
-fn extract_fn(fun, env) {
   case fun {
-    obj.Fn(params, body, env) -> Ok(#(params, body, env))
-    _ -> Error(#(obj.bad_function_error(fun), env))
+    obj.Fn(params, body, stored_env) ->
+      case list.strict_zip(params, args) {
+        Error(list.LengthMismatch) -> {
+          let expected = list.length(params)
+          let actual = list.length(args)
+          Error(#(obj.bad_arity_error(expected, actual), outer_env))
+        }
+        Ok(params_with_args) -> {
+          let fun_env =
+            list.fold(params_with_args, stored_env, fn(env, param_and_arg) {
+              let #(param, arg) = param_and_arg
+              obj.set_env(env, param, arg)
+            })
+
+          use #(return_value, _env) <- result.map(do_eval(body, fun_env))
+          #(return_value, outer_env)
+        }
+      }
+
+    obj.Builtin(f) ->
+      case f(args) {
+        Ok(return_value) -> Ok(#(return_value, outer_env))
+        Error(err) -> Error(#(err, outer_env))
+      }
+
+    _ -> Error(#(obj.bad_function_error(fun), outer_env))
   }
 }
 

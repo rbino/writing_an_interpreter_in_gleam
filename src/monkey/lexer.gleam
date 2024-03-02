@@ -51,6 +51,8 @@ fn do_lex(tokens, remaining) {
     ["!", "=", ..rest] -> do_lex([token.NotEq, ..tokens], rest)
     ["(", ..rest] -> do_lex([token.LParen, ..tokens], rest)
     [")", ..rest] -> do_lex([token.RParen, ..tokens], rest)
+    ["[", ..rest] -> do_lex([token.LBracket, ..tokens], rest)
+    ["]", ..rest] -> do_lex([token.RBracket, ..tokens], rest)
     ["{", ..rest] -> do_lex([token.LBrace, ..tokens], rest)
     ["}", ..rest] -> do_lex([token.RBrace, ..tokens], rest)
     ["=", ..rest] -> do_lex([token.Assign, ..tokens], rest)

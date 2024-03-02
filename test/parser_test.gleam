@@ -172,6 +172,27 @@ pub fn function_call_test() {
   expression_test(input, expected)
 }
 
+pub fn array_literal_test() {
+  let input = "[1, 2 * 2, 3 + 3]"
+  let expected =
+    ast.Array([
+      ast.Int(1),
+      ast.BinaryOp(ast.Int(2), ast.Mul, ast.Int(2)),
+      ast.BinaryOp(ast.Int(3), ast.Add, ast.Int(3)),
+    ])
+  expression_test(input, expected)
+}
+
+pub fn array_indexing_test() {
+  let input = "myArray[1 + 1]"
+  let expected =
+    ast.Index(
+      lhs: ast.Ident("myArray"),
+      index: ast.BinaryOp(ast.Int(1), ast.Add, ast.Int(1)),
+    )
+  expression_test(input, expected)
+}
+
 fn expression_test(input, expected) {
   let result =
     input

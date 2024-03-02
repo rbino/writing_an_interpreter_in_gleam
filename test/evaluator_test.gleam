@@ -304,6 +304,39 @@ pub fn builtin_test() {
     |> eval_error()
 }
 
+pub fn array_literal_test() {
+  "[1, 2 * 2, 3 + 3, \"foo\"]"
+  |> eval()
+  |> should.equal(
+    obj.Array([obj.Int(1), obj.Int(4), obj.Int(6), obj.String("foo")]),
+  )
+}
+
+pub fn array_indexing_test() {
+  [
+    #("[1, 2, 3][0]", obj.Int(1)),
+    #("[1, 2, 3][1]", obj.Int(2)),
+    #("[1, 2, 3][2]", obj.Int(3)),
+    #("let i = 0; [1][i]", obj.Int(1)),
+    #("[1, 2, 3][1 + 1]", obj.Int(3)),
+    #("let myArray = [1, 2, 3]; myArray[2];", obj.Int(3)),
+    #(
+      "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+      obj.Int(6),
+    ),
+    #("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", obj.Int(2)),
+    #("[1, 2, 3][3]", obj.Null),
+    #("[1, 2, 3][-1]", obj.Null),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+}
+
 fn eval(input) {
   let result =
     input

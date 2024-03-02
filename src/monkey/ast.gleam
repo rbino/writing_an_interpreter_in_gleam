@@ -32,6 +32,8 @@ pub type Node {
   Ident(ident: String)
   Int(value: Int)
   String(value: String)
+  Array(elements: List(Node))
+  Index(lhs: Node, index: Node)
   True
   False
   UnaryOp(op: UnaryOperation, rhs: Node)
@@ -91,6 +93,13 @@ pub fn to_string(node) {
     Ident(value) -> value
     Int(value) -> int.to_string(value)
     String(value) -> "\"" <> value <> "\""
+    Array(elements) ->
+      "["
+      <> list.map(elements, to_string)
+      |> string.join(", ")
+      <> "]"
+    Index(lhs, index) ->
+      "(" <> to_string(lhs) <> "[" <> to_string(index) <> "])"
     True -> "true"
     False -> "false"
     UnaryOp(op: op, rhs: rhs) ->

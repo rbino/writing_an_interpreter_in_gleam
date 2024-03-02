@@ -27,6 +27,8 @@ pub type Token {
 
   LParen
   RParen
+  LBracket
+  RBracket
   LBrace
   RBrace
 
@@ -59,6 +61,8 @@ pub fn to_string(token) {
     Semicolon -> ";"
     LParen -> "("
     RParen -> ")"
+    LBracket -> "["
+    RBracket -> "]"
     LBrace -> "{"
     RBrace -> "}"
     Fn -> "fn"

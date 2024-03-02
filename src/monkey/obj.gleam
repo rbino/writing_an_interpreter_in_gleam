@@ -18,6 +18,7 @@ pub type Env {
 pub type Object {
   Int(Int)
   String(String)
+  Array(elements: List(Object))
   True
   False
   Null
@@ -31,6 +32,11 @@ pub fn inspect(obj) {
   case obj {
     Int(value) -> int.to_string(value)
     String(value) -> "\"" <> value <> "\""
+    Array(elements) ->
+      "["
+      <> list.map(elements, inspect)
+      |> string.join(", ")
+      <> "]"
     True -> "true"
     False -> "false"
     Null -> "null"
@@ -52,6 +58,7 @@ pub fn object_type(obj) {
   case obj {
     Int(_) -> "int"
     String(_) -> "string"
+    Array(_) -> "array"
     True | False -> "bool"
     Null -> "null"
     Fn(_, _, _) -> "function"
@@ -122,5 +129,17 @@ pub fn bad_arity_error(expected, actual) {
     <> int.to_string(actual)
 
   BadArityError(msg)
+  |> Error()
+}
+
+pub fn invalid_index_error(index) {
+  let msg = "invalid index type: " <> object_type(index)
+  TypeError(msg)
+  |> Error()
+}
+
+pub fn invalid_indexed_object_error(obj) {
+  let msg = "invalid indexed object type: " <> object_type(obj)
+  TypeError(msg)
   |> Error()
 }

@@ -22,6 +22,8 @@ const prec_prefix = 6
 
 const prec_call = 7
 
+const prec_index = 8
+
 pub fn parse(tokens) {
   do_parse(Parser(tokens, []), [])
 }
@@ -132,7 +134,11 @@ fn parse_prefix(parser: Parser, token) {
 
     token.If -> parse_if_expression(parser)
     token.Fn -> parse_function_literal(parser)
-
+    token.LBracket -> {
+      let result = parse_expression_list(parser, [], token.RBracket)
+      use #(exprs, parser) <- result.map(result)
+      #(ast.Array(exprs), parser)
+    }
     token ->
       parser
       |> add_unexpected_token_error("an expression", token)
@@ -207,10 +213,17 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
   use <- bool.guard(when: base_prec >= next_prec, return: Ok(#(lhs, parser)))
   case parser.remaining {
     [token.LParen, ..] -> {
-      use #(arguments, parser) <- result.try(
-        parse_call_arguments(advance(parser), []),
-      )
+      let result = parse_expression_list(advance(parser), [], token.RParen)
+      use #(arguments, parser) <- result.try(result)
       let node = ast.Call(function: lhs, arguments: arguments)
+      parse_infix(parser, node, base_prec)
+    }
+
+    [token.LBracket, ..] -> {
+      let result = parse_expression(advance(parser), prec_lowest)
+      use #(index, parser) <- result.try(result)
+      use parser <- result.try(expect(parser, token.RBracket))
+      let node = ast.Index(lhs: lhs, index: index)
       parse_infix(parser, node, base_prec)
     }
 
@@ -243,24 +256,30 @@ fn parse_infix(parser: Parser, lhs, base_prec) {
   }
 }
 
-fn parse_call_arguments(parser: Parser, arguments) {
+fn parse_expression_list(parser: Parser, elems, end) {
   case parser.remaining {
-    [token.RParen, ..] -> Ok(#(list.reverse(arguments), advance(parser)))
+    [token, ..] if token == end -> {
+      Ok(#(list.reverse(elems), advance(parser)))
+    }
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
+
     _ -> {
-      use #(argument, parser) <- result.try(parse_expression(
-        parser,
-        prec_lowest,
-      ))
+      use #(elem, parser) <- result.try(parse_expression(parser, prec_lowest))
       case parser.remaining {
         [token.Comma, ..] ->
-          parse_call_arguments(advance(parser), [argument, ..arguments])
+          parse_expression_list(advance(parser), [elem, ..elems], end)
 
-        [token.RParen, ..] ->
-          Ok(#(list.reverse([argument, ..arguments]), advance(parser)))
+        [token, ..] if token == end -> {
+          Ok(#(list.reverse([elem, ..elems]), advance(parser)))
+        }
 
         [token, ..] ->
           parser
-          |> add_unexpected_token_error(", or )", token)
+          |> add_unexpected_token_error(", or ]", token)
           |> Error()
 
         [] ->
@@ -311,6 +330,7 @@ fn peek_precedence(parser: Parser) {
     [token.Asterisk, ..] -> prec_product
     [token.Slash, ..] -> prec_product
     [token.LParen, ..] -> prec_call
+    [token.LBracket, ..] -> prec_index
     _ -> prec_lowest
   }
 }

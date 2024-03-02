@@ -33,6 +33,8 @@ if (5 < 10) {
 
 \"foobar\"
 \"foo bar\"
+
+[1, 2];
 "
 
   let expected_tokens = [
@@ -111,6 +113,12 @@ if (5 < 10) {
     token.Semicolon,
     token.String("foobar"),
     token.String("foo bar"),
+    token.LBracket,
+    token.Int(1),
+    token.Comma,
+    token.Int(2),
+    token.RBracket,
+    token.Semicolon,
   ]
 
   let tokens = lexer.lex(input)

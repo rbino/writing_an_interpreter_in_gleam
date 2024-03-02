@@ -31,6 +31,10 @@ fn do_eval(node, env) {
     ast.Ident(name) -> eval_identifier(name, env)
     ast.Int(value) -> Ok(#(obj.Int(value), env))
     ast.String(value) -> Ok(#(obj.String(value), env))
+    ast.Array(elements) -> {
+      use #(values, env) <- result.map(eval_expressions(elements, env))
+      #(obj.Array(values), env)
+    }
     ast.True -> Ok(#(obj.True, env))
     ast.False -> Ok(#(obj.False, env))
     ast.UnaryOp(op: op, rhs: rhs) -> {
@@ -79,6 +83,11 @@ fn do_eval(node, env) {
       use #(arg_values, env) <- result.try(eval_expressions(args, env))
       eval_function_call(fun_obj, arg_values, env)
     }
+    ast.Index(lhs, index) -> {
+      use #(lhs_obj, env) <- result.try(do_eval(lhs, env))
+      use #(index_obj, env) <- result.try(do_eval(index, env))
+      eval_indexing(lhs_obj, index_obj, env)
+    }
   }
 }
 
@@ -111,6 +120,20 @@ fn eval_negation(rhs, env) {
       let err = obj.unsupported_unary_op_error(ast.Negate, rhs)
       Error(#(err, env))
     }
+  }
+}
+
+fn eval_indexing(lhs, index, env) {
+  case lhs, index {
+    obj.Array(elements), obj.Int(i) -> {
+      let value =
+        list.at(elements, i)
+        |> result.unwrap(obj.Null)
+      Ok(#(value, env))
+    }
+
+    obj.Array(_), _ -> Error(#(obj.invalid_index_error(index), env))
+    _, _ -> Error(#(obj.invalid_indexed_object_error(lhs), env))
   }
 }
 

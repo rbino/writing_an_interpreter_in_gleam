@@ -1,5 +1,6 @@
 import gleam/dict
 import gleam/int
+import gleam/list
 import gleam/string
 import monkey/ast
 
@@ -67,4 +68,58 @@ pub fn get_env(env: Env, name) {
 
 pub fn set_env(env: Env, name, value) {
   Env(store: dict.insert(env.store, name, value))
+}
+
+pub fn unsupported_unary_op_error(op, rhs) {
+  let msg =
+    "'"
+    <> ast.unary_op_to_string(op)
+    <> "' not supported for type "
+    <> object_type(rhs)
+  TypeError(msg)
+  |> Error()
+}
+
+pub fn unsupported_binary_op_error(op, lhs, rhs) {
+  let msg =
+    "'"
+    <> ast.binary_op_to_string(op)
+    <> "' not supported between "
+    <> object_type(lhs)
+    <> " and "
+    <> object_type(rhs)
+  TypeError(msg)
+  |> Error()
+}
+
+pub fn unknown_identifier_error(name) {
+  let msg = "unknown identifier '" <> name <> "'"
+  UnknownIdentifierError(msg)
+  |> Error()
+}
+
+pub fn bad_function_error(fun) {
+  let msg = "expected a function, got: " <> inspect(fun)
+  BadFunctionError(msg)
+  |> Error()
+}
+
+pub fn bad_arity_error(params, args) {
+  let expected_arg_count = list.length(params)
+  let actual_arg_count = list.length(args)
+  let subj = case expected_arg_count {
+    1 -> "argument"
+    _ -> "arguments"
+  }
+
+  let msg =
+    "expected "
+    <> int.to_string(expected_arg_count)
+    <> " "
+    <> subj
+    <> ", got "
+    <> int.to_string(actual_arg_count)
+
+  BadArityError(msg)
+  |> Error()
 }

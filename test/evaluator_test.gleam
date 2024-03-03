@@ -281,11 +281,21 @@ pub fn closures_test() {
   |> should.equal(obj.Int(4))
 }
 
-pub fn builtin_test() {
+pub fn builtin_len_test() {
   [
     #("len(\"\")", obj.Int(0)),
     #("len(\"four\")", obj.Int(4)),
     #("len(\"hello world\")", obj.Int(11)),
+    #("len([1, 2, 3])", obj.Int(3)),
+    #("first([1, 2, 3])", obj.Int(1)),
+    #("rest([1, 2, 3])", obj.Array([obj.Int(2), obj.Int(3)])),
+    #("last([1, 2, 3])", obj.Int(3)),
+    #("first(rest([1, 2, 3]))", obj.Int(2)),
+    #("last(rest([1, 2, 3]))", obj.Int(3)),
+    #("first([])", obj.Null),
+    #("last([])", obj.Null),
+    #("rest([])", obj.Null),
+    #("rest(rest([1]))", obj.Null),
   ]
   |> list.each(fn(under_test) {
     let #(input, expected) = under_test
@@ -295,13 +305,19 @@ pub fn builtin_test() {
     |> should.equal(expected)
   })
 
-  let assert obj.Error(obj.TypeError(_)) =
-    "len(1)"
-    |> eval_error()
+  ["len(1)", "len(true)", "first(1)", "last(\"foo\")", "rest(true)"]
+  |> list.each(fn(under_test) {
+    let assert obj.Error(obj.TypeError(_)) =
+      under_test
+      |> eval_error()
+  })
 
-  let assert obj.Error(obj.BadArityError(_)) =
-    "len(\"one\", \"two\")"
-    |> eval_error()
+  ["len(\"foo\", \"bar\")", "len([], [])", "first([], [])", "last([], [])"]
+  |> list.each(fn(under_test) {
+    let assert obj.Error(obj.BadArityError(_)) =
+      under_test
+      |> eval_error()
+  })
 }
 
 pub fn array_literal_test() {

@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/string
 import monkey/obj
@@ -8,6 +9,7 @@ pub fn get(name) {
     "first" -> Ok(obj.Builtin(builtin_first))
     "last" -> Ok(obj.Builtin(builtin_last))
     "rest" -> Ok(obj.Builtin(builtin_rest))
+    "puts" -> Ok(obj.Builtin(builtin_puts))
     _ -> Error(Nil)
   }
 }
@@ -78,4 +80,16 @@ fn array_builtin(args, fun) {
 
 fn bad_arity(expected, actual) {
   Error(obj.bad_arity_error(expected, actual))
+}
+
+fn builtin_puts(args) {
+  let helper = fn(arg) {
+    arg
+    |> obj.inspect()
+    |> io.println()
+  }
+
+  list.each(args, helper)
+
+  Ok(obj.Null)
 }

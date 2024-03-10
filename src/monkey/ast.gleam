@@ -1,3 +1,4 @@
+import gleam/dict
 import gleam/int
 import gleam/list
 import gleam/string
@@ -33,6 +34,7 @@ pub type Node {
   Int(value: Int)
   String(value: String)
   Array(elements: List(Node))
+  Hash(elements: dict.Dict(Node, Node))
   Index(lhs: Node, index: Node)
   True
   False
@@ -98,6 +100,18 @@ pub fn to_string(node) {
       <> list.map(elements, to_string)
       |> string.join(", ")
       <> "]"
+    Hash(elements) -> {
+      let elem_string =
+        elements
+        |> dict.to_list()
+        |> list.map(fn(element) {
+          let #(key, value) = element
+          to_string(key) <> ": " <> to_string(value)
+        })
+        |> string.join(", ")
+
+      "{" <> elem_string <> "}"
+    }
     Index(lhs, index) ->
       "(" <> to_string(lhs) <> "[" <> to_string(index) <> "])"
     True -> "true"

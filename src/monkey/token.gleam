@@ -24,6 +24,7 @@ pub type Token {
   // Delimiters
   Comma
   Semicolon
+  Colon
 
   LParen
   RParen
@@ -59,6 +60,7 @@ pub fn to_string(token) {
     NotEq -> "!="
     Comma -> ","
     Semicolon -> ";"
+    Colon -> ":"
     LParen -> "("
     RParen -> ")"
     LBracket -> "["

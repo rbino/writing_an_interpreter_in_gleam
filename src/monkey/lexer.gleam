@@ -65,6 +65,7 @@ fn do_lex(tokens, remaining) {
     ["/", ..rest] -> do_lex([token.Slash, ..tokens], rest)
     ["<", ..rest] -> do_lex([token.LT, ..tokens], rest)
     [">", ..rest] -> do_lex([token.GT, ..tokens], rest)
+    [":", ..rest] -> do_lex([token.Colon, ..tokens], rest)
     ["\"", ..rest] -> lex_string(rest, string_builder.new(), tokens)
     [" ", ..rest] | ["\n", ..rest] | ["\r", ..rest] | ["\t", ..rest] ->
       do_lex(tokens, rest)

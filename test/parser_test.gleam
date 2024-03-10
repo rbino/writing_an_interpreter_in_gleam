@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import gleam/dict
 import gleam/list
 import monkey/ast
 import monkey/lexer
@@ -189,6 +190,49 @@ pub fn array_indexing_test() {
     ast.Index(
       lhs: ast.Ident("myArray"),
       index: ast.BinaryOp(ast.Int(1), ast.Add, ast.Int(1)),
+    )
+  expression_test(input, expected)
+}
+
+pub fn hash_literal_test() {
+  let input = "{\"one\": 1, \"two\": 2, \"three\": 3}"
+  let expected =
+    ast.Hash(
+      [
+        #(ast.String("one"), ast.Int(1)),
+        #(ast.String("two"), ast.Int(2)),
+        #(ast.String("three"), ast.Int(3)),
+      ]
+      |> dict.from_list(),
+    )
+  expression_test(input, expected)
+}
+
+pub fn empty_hash_literal_test() {
+  let input = "{}"
+  let expected = ast.Hash(dict.new())
+  expression_test(input, expected)
+}
+
+pub fn expr_hash_literal_test() {
+  let input = "{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15 / 5}"
+  let expected =
+    ast.Hash(
+      [
+        #(
+          ast.String("one"),
+          ast.BinaryOp(lhs: ast.Int(0), op: ast.Add, rhs: ast.Int(1)),
+        ),
+        #(
+          ast.String("two"),
+          ast.BinaryOp(lhs: ast.Int(10), op: ast.Sub, rhs: ast.Int(8)),
+        ),
+        #(
+          ast.String("three"),
+          ast.BinaryOp(lhs: ast.Int(15), op: ast.Div, rhs: ast.Int(5)),
+        ),
+      ]
+      |> dict.from_list(),
     )
   expression_test(input, expected)
 }

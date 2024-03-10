@@ -1,4 +1,5 @@
 import gleam/bool
+import gleam/dict
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -139,6 +140,11 @@ fn parse_prefix(parser: Parser, token) {
       use #(exprs, parser) <- result.map(result)
       #(ast.Array(exprs), parser)
     }
+    token.LBrace -> {
+      let result = parse_hash_literal(parser, dict.new())
+      use #(elements, parser) <- result.map(result)
+      #(ast.Hash(elements), parser)
+    }
     token ->
       parser
       |> add_unexpected_token_error("an expression", token)
@@ -206,6 +212,48 @@ fn parse_function_parameters(parser: Parser, params) {
       |> add_unexpected_eof_error()
       |> Error()
   }
+}
+
+fn parse_hash_literal(parser: Parser, elements) {
+  case parser.remaining {
+    [token.RBrace, ..] -> {
+      Ok(#(elements, advance(parser)))
+    }
+
+    [] ->
+      parser
+      |> add_unexpected_eof_error()
+      |> Error()
+
+    _ -> {
+      use #(new_elements, parser) <- result.try(parse_hash_element(
+        parser,
+        elements,
+      ))
+      case parser.remaining {
+        [token.Comma, ..] -> parse_hash_literal(advance(parser), new_elements)
+
+        [token.RBrace, ..] -> Ok(#(new_elements, advance(parser)))
+
+        [token, ..] ->
+          parser
+          |> add_unexpected_token_error(", or }", token)
+          |> Error()
+
+        [] ->
+          parser
+          |> add_unexpected_eof_error()
+          |> Error()
+      }
+    }
+  }
+}
+
+fn parse_hash_element(parser: Parser, elements) {
+  use #(key, parser) <- result.try(parse_expression(parser, prec_lowest))
+  use parser <- result.try(expect(parser, token.Colon))
+  use #(value, parser) <- result.map(parse_expression(parser, prec_lowest))
+  #(dict.insert(elements, key, value), parser)
 }
 
 fn parse_infix(parser: Parser, lhs, base_prec) {

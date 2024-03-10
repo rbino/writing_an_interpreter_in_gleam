@@ -19,6 +19,7 @@ pub type Object {
   Int(Int)
   String(String)
   Array(elements: List(Object))
+  Hash(elements: dict.Dict(Object, Object))
   True
   False
   Null
@@ -37,6 +38,18 @@ pub fn inspect(obj) {
       <> list.map(elements, inspect)
       |> string.join(", ")
       <> "]"
+    Hash(elements) -> {
+      let elem_string =
+        elements
+        |> dict.to_list()
+        |> list.map(fn(elem) {
+          let #(key, value) = elem
+          inspect(key) <> ": " <> inspect(value)
+        })
+        |> string.join(", ")
+
+      "{" <> elem_string <> "}"
+    }
     True -> "true"
     False -> "false"
     Null -> "null"
@@ -59,6 +72,7 @@ pub fn object_type(obj) {
     Int(_) -> "int"
     String(_) -> "string"
     Array(_) -> "array"
+    Hash(_) -> "hash"
     True | False -> "bool"
     Null -> "null"
     Fn(_, _, _) -> "function"

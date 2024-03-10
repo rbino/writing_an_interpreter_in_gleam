@@ -1,3 +1,4 @@
+import gleam/dict
 import gleam/list
 import gleam/result
 import monkey/ast
@@ -35,6 +36,7 @@ fn do_eval(node, env) {
       use #(values, env) <- result.map(eval_expressions(elements, env))
       #(obj.Array(values), env)
     }
+    ast.Hash(elements) -> eval_hash(elements, env)
     ast.True -> Ok(#(obj.True, env))
     ast.False -> Ok(#(obj.False, env))
     ast.UnaryOp(op: op, rhs: rhs) -> {
@@ -182,6 +184,30 @@ fn eval_expressions(exprs, env) {
 
   use #(values, env) <- result.map(res)
   #(list.reverse(values), env)
+}
+
+fn eval_hash(elements, env) {
+  let res =
+    elements
+    |> dict.to_list()
+    |> list.fold_until(Ok(#(dict.new(), env)), fn(acc, kv) {
+      let #(key, value) = kv
+      let assert Ok(#(hash, env)) = acc
+      case do_eval(key, env) {
+        Ok(#(key_obj, env)) ->
+          case do_eval(value, env) {
+            Ok(#(value_obj, env)) ->
+              list.Continue(Ok(#(dict.insert(hash, key_obj, value_obj), env)))
+
+            Error(#(err, env)) -> list.Stop(Error(#(err, env)))
+          }
+
+        Error(#(err, env)) -> list.Stop(Error(#(err, env)))
+      }
+    })
+
+  use #(elems, env) <- result.map(res)
+  #(obj.Hash(elems), env)
 }
 
 fn eval_function_call(fun, args, outer_env) {

@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import gleam/dict
 import gleam/list
 import monkey/ast
 import monkey/evaluator
@@ -350,6 +351,37 @@ pub fn array_indexing_test() {
     input
     |> eval()
     |> should.equal(expected)
+  })
+}
+
+pub fn hash_eval_test() {
+  let input =
+    "let two = \"two\";
+ {
+   \"one\": 10 - 9,
+   two: 1 + 1,
+   \"thr\" + \"ee\": 6 / 2,
+   4: 4,
+   true: 5,
+   false: 6
+ }
+"
+
+  let assert obj.Hash(elements) = eval(input)
+
+  [
+    #(obj.String("one"), obj.Int(1)),
+    #(obj.String("two"), obj.Int(2)),
+    #(obj.String("three"), obj.Int(3)),
+    #(obj.Int(4), obj.Int(4)),
+    #(obj.True, obj.Int(5)),
+    #(obj.False, obj.Int(6)),
+  ]
+  |> list.each(fn(expected) {
+    let #(key, value) = expected
+
+    dict.get(elements, key)
+    |> should.equal(Ok(value))
   })
 }
 

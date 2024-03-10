@@ -385,6 +385,27 @@ pub fn hash_eval_test() {
   })
 }
 
+pub fn hash_indexing_test() {
+  [
+    #("{\"foo\": 5}[\"foo\"]", obj.Int(5)),
+    #("{\"foo\": 5}[\"bar\"]", obj.Null),
+    #("let key = \"foo\"; {\"foo\": 5}[key]", obj.Int(5)),
+    #("{}[\"foo\"]", obj.Null),
+    #("{5: 5}[5]", obj.Int(5)),
+    #("{true: 5}[true]", obj.Int(5)),
+    #("{false: 5}[false]", obj.Int(5)),
+    #("let f = fn() { 42 }; {f: 5}[f]", obj.Int(5)),
+    #("let f = fn() { 42 }; let g = fn() { 42 }; {f: 5}[g]", obj.Null),
+  ]
+  |> list.each(fn(under_test) {
+    let #(input, expected) = under_test
+
+    input
+    |> eval()
+    |> should.equal(expected)
+  })
+}
+
 fn eval(input) {
   let result =
     input

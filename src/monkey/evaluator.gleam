@@ -134,6 +134,13 @@ fn eval_indexing(lhs, index, env) {
       Ok(#(value, env))
     }
 
+    obj.Hash(elements), key -> {
+      let value =
+        dict.get(elements, key)
+        |> result.unwrap(obj.Null)
+      Ok(#(value, env))
+    }
+
     obj.Array(_), _ -> Error(#(obj.invalid_index_error(index), env))
     _, _ -> Error(#(obj.invalid_indexed_object_error(lhs), env))
   }
